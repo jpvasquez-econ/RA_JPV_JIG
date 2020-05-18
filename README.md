@@ -1,1 +1,1 @@
-# RA_JPV_JIG
+Research assistance work. José Ignacio González
