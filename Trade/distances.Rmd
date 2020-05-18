@@ -1,0 +1,193 @@
+---
+title: "Measuring distance between two regions"
+author: "José Ignacio González Rojas"
+date: "11/5/2020"
+output: 
+  pdf_document:
+    toc: yes
+    df_print: paged
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{mathpazo}
+---
+
+# General information
+
+The purpose of this code is to calculate the distance between two regions weighted by the population in their sub regions. The data needs to correspond with the year 2010. 
+
+## Input files
+
+1. `0-Raw_Data/Fips/us_states_coordinates_counties.xlsx`
+2. `0-Raw_Data/Fips/state_codes.txt`
+3. `1-Intermediate_Processed_Data/country_coordinates.dta`
+
+## Output files
+
+1. `1-Intermediate_Processed_Data/distances.csv` This file contains the region of origin "iso_o", the region of destination "iso_d" and the distance "dist" between the two regions. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+```
+
+```{r packages, message=FALSE, warning=FALSE, cache=FALSE, include=FALSE, results='hide'}
+# libraries
+# vector of libraries to be used
+
+libs <- c("dplyr", "tidyr", "haven", "styler", "lintr", "readxl", "reshape", "janitor", "geosphere", "readr")
+
+# Installing libraries in case they are not installed
+
+for(i in length(libs)){ 
+  if(!(libs[i] %in% installed.packages())) install.packages(libs) 
+}
+
+# Load corresponding libraries
+
+lapply(libs, require, character.only=TRUE)
+```
+# Importing data to R
+
+In this step, the data needed it's imported into R. Note that the data sets are in STATA's and Excel's formats, so that's why the library "haven" and "readxl" were loaded.
+
+```{r data-importing}
+# Main inputs
+
+world_cities <- read_dta("1-Intermediate_Processed_Data/country_coordinates.dta")
+us_counties <- read_xlsx("0-Raw_Data/Fips/us_states_coordinates_counties.xlsx")
+state_codes <- read_delim("0-Raw_Data/Fips/state_codes.txt", "-", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
+```
+
+# Cleaning and manipulating the data
+
+## Cleaning variable names
+
+The library "janitor" helps standardizing the variable names to the *snake_case*'s format. 
+```{r cleaning-variable-names}
+world_cities <- janitor::clean_names(world_cities)
+us_counties <- janitor::clean_names(us_counties)
+```
+
+## Filtering data
+
+Note that the "country_coordinates" data set has data from 1950 to the present, so it's needed to filter the data such that only the year 2010's observations remain. Also, the variables that aren't useful are dropped. In the case of "world_cities" data set, the data that corresponds to the USA it's dropped since there's a specific data set for it. 
+
+There was an important step in the treatment of the "us_counties" data set before it was imported. The minus sign in the original data set was indicated with a long dash in the longitude variable, which caused R to interpret the numbers as characters. There's no easy approach to fix this error directly in R because it can't handle the difference between the minus sign and the long dash. So the solution taken was to use the **SUBSTITUTE** command in Excel to replace the long dashes with -, then the cells were converted to numbers. 
+
+Another topic that had to be treated was changing the abbreviation names of the states to their full names. This was accomplished from adding the missing state "DC" to "state_codes" data set and then matching the abbreviations with their corresponding state. 
+
+Finally, the columns names are changed to more convenient names. 
+
+```{r keep-necessary-variables, echo=TRUE}
+# Adding missing state(DC) in "state_codes"
+
+state_codes <- rbind(state_codes, c("District of Columbia", "DC"))
+
+# Selecting the variables of interest
+
+us_counties <- us_counties %>% 
+  transmute(region = state_codes$X1[match(state, state_codes$X2)], subregion = county, subregion_population = population_2010, latitude, longitude)
+
+world_cities <- world_cities %>% 
+  filter(year == 2010 & country != "USA") %>% 
+  select(region = country, subregion = city, latitude, longitude, subregion_population = city_population, region_population = country_population)
+world_cities$subregion_population[world_cities$subregion == "Cork"] <- 124.391 # This value was missing and it had to be inputed by code
+```
+
+# Calculating the missing information
+
+There are variables in the "country_coordinates" data set that aren't present in the "us_counties". In particular, the total population by state, also, the share of the population in the sub region with respect to the region it's calculated in both data sets. Fortunately, these variables can be computed. 
+
+## Creating the needed variables 
+
+The variables that are missing in the data sets are created. 
+
+```{r creating-needed-variables, echo=TRUE}
+# Calculating the share of the population in the subregion with respect to the region
+
+us_counties <- us_counties %>%  
+  group_by(region) %>% 
+  mutate(region_population = sum(subregion_population)) %>% 
+  ungroup() %>% 
+  transmute(region, subregion, weight = subregion_population / region_population, latitude, longitude)
+
+world_cities <- world_cities %>% 
+  transmute(region, subregion, weight = subregion_population / region_population, latitude, longitude)
+```
+
+# Setting up the information
+
+Now that the needed variables were created, the next step is to figure out all the possible combinations of sub regions from different regions. To accomplish that goal, the data sets are duplicated and combined in every possible way, then, the observations of two sub regions within the same region are dropped. 
+
+## Concatenating the data sets
+
+The column names need to be the same in order to concatenate the dataframes, so they're renamed properly. 
+```{r concatenating-datasets, echo=TRUE}
+# Concatenate the datasets
+
+regions_subregions1 <- rbind(world_cities, us_counties)
+```
+
+## Expanding the data set
+
+Here the data set it's expanded and all the possible combinations are found. First, an identical data set it's needed with different column names. 
+
+```{r expansion, echo=TRUE}
+# Duplicate the dataset
+
+regions_subregions2 <- regions_subregions1
+
+colnames(regions_subregions1) <- paste(colnames(regions_subregions1), "1", sep="") #Adds 1 at the end of the variable name
+colnames(regions_subregions2) <- paste(colnames(regions_subregions2), "2", sep="") #Adds 2 at the end of the variable name
+
+regions_subregions <- expand.grid.df(regions_subregions1, regions_subregions2) # Combines all the rows in every possible way 
+```
+
+# Computing the provided formula
+
+In order to obtain the distances weighted, the original distances are needed in first place. Then, the joint weight of the shares of the sub regions with respect to the total population of the region it's calculated. Finally, we apply the formula for a particular $\theta = -1$. 
+
+## Calculating the distances between sub regions
+
+The distance between two sub regions is calculated using the "geosphere" library. Additionally, the distance is divided by 1000, because it is required to be expressed in kilometers. At the end, the variables of interest to continue the task are selected. 
+
+```{r distance, echo=TRUE}
+regions_subregions <- regions_subregions %>% 
+  rowwise() %>% # The next operation can't be made with matrix vectorization, that's why it's computed row by row. 
+  mutate(distance_rs = distGeo(c(longitude1, latitude1), c(longitude2, latitude2)) / 1000) %>% 
+  ungroup() %>% #The reverse command of rowwise()
+  select(-longitude1, -longitude2, -latitude1, -latitude2)
+```
+
+## Creating the distance value and filtering the data
+
+First, the original distance is elevated to $\theta$. Every distance between two sub regions from different regions is multiplied by the share of the sub region in the overall region's population. Then, both of them are multiplied. We group by regions, then sum all the distances. Finally, it's elevated to $\frac{1}{\theta}$. 
+
+Aditionally, the necessary columns are selected and their names are changed. Also, the unique observations are kept. 
+
+```{r subregion-joint-weighted-distances, echo=TRUE}
+theta <- -1
+regions_subregions <- regions_subregions %>% 
+  mutate(weighted_distances = weight1 * weight2 * distance_rs^theta) %>% 
+  group_by(region1, region2) %>% 
+  filter(weighted_distances != Inf) %>% 
+  summarize(dist = sum(weighted_distances)^(1/theta)) %>% 
+  ungroup() %>% 
+  unique() %>% 
+  select(iso_o = region1, iso_d = region2, dist)
+
+regions_subregions <- rbind(regions_subregions, c("DistrictofColumbia", "DistrictofColumbia", 0)) # Add DC's distance since it can't be defined by the formula
+```
+
+## Export the final data set
+
+Finally, the spaces are removed in the states' names. The final data set is exported to a .csv file. 
+
+```{r final-dataset, echo=TRUE}
+regions_subregions$iso_o <- gsub('\\s+', '', regions_subregions$iso_o) # Removing spaces
+regions_subregions$iso_d <- gsub('\\s+', '', regions_subregions$iso_d)
+
+write.csv(regions_subregions, "1-Intermediate_Processed_Data/distances.csv")
+```
