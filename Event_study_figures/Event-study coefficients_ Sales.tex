@@ -1,0 +1,114 @@
+% This file was created by tikzplotlib v0.9.1.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+
+\begin{axis}[
+tick align=outside,
+tick pos=left,
+x grid style={white!69.0196078431373!black},
+xlabel={Years Since First MNC Interaction},
+xmin=-13.2, xmax=13.2,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ylabel={Coefficients: Sales},
+ymajorgrids,
+ymin=-0.0366, ymax=0.2406,
+ytick style={color=black}
+]
+\path [fill=color0, fill opacity=0.5]
+(axis cs:-12,0.015)
+--(axis cs:-12,-0.005)
+--(axis cs:-11,-0.013)
+--(axis cs:-10,0.003)
+--(axis cs:-9,-0.005)
+--(axis cs:-8,-0.005)
+--(axis cs:-7,-0.003)
+--(axis cs:-6,0)
+--(axis cs:-5,0)
+--(axis cs:-4,-0.001)
+--(axis cs:-3,-0.003)
+--(axis cs:-2,-0.001)
+--(axis cs:-1,0)
+--(axis cs:0,-0.024)
+--(axis cs:1,-0.022)
+--(axis cs:2,-0.018)
+--(axis cs:3,-0.012)
+--(axis cs:4,-0.005)
+--(axis cs:5,0.004)
+--(axis cs:6,0.014)
+--(axis cs:7,0.026)
+--(axis cs:8,0.04)
+--(axis cs:9,0.055)
+--(axis cs:10,0.072)
+--(axis cs:11,0.09)
+--(axis cs:12,0.11)
+--(axis cs:12,0.228)
+--(axis cs:12,0.228)
+--(axis cs:11,0.198)
+--(axis cs:10,0.17)
+--(axis cs:9,0.145)
+--(axis cs:8,0.122)
+--(axis cs:7,0.102)
+--(axis cs:6,0.084)
+--(axis cs:5,0.068)
+--(axis cs:4,0.055)
+--(axis cs:3,0.044)
+--(axis cs:2,0.036)
+--(axis cs:1,0.03)
+--(axis cs:0,0.026)
+--(axis cs:-1,0)
+--(axis cs:-2,0.005)
+--(axis cs:-3,0.013)
+--(axis cs:-4,0.005)
+--(axis cs:-5,0.008)
+--(axis cs:-6,0.01)
+--(axis cs:-7,0.005)
+--(axis cs:-8,0.009)
+--(axis cs:-9,0.011)
+--(axis cs:-10,0.005)
+--(axis cs:-11,0.017)
+--(axis cs:-12,0.015)
+--cycle;
+
+\addplot [red]
+table {%
+-13.2 0
+13.2 0
+};
+\addplot [black, dashed]
+table {%
+0 -0.0366
+0 0.2406
+};
+\addplot [semithick, color0]
+table {%
+-12 0.005
+-11 0.002
+-10 0.004
+-9 0.003
+-8 0.002
+-7 0.001
+-6 0.005
+-5 0.004
+-4 0.002
+-3 0.005
+-2 0.002
+-1 0
+0 0.001
+1 0.004
+2 0.009
+3 0.016
+4 0.025
+5 0.036
+6 0.049
+7 0.064
+8 0.081
+9 0.1
+10 0.121
+11 0.144
+12 0.169
+};
+\end{axis}
+
+\end{tikzpicture}
