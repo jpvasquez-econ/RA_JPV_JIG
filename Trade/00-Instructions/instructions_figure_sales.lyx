@@ -1,0 +1,330 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\def\old@comma{,}
+\catcode`\,=13
+\def,{%
+  \ifmmode%
+    \old@comma\discretionary{}{}{}%
+  \else%
+    \old@comma%
+  \fi%
+}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "ae" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 1
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Subsection*
+Instructions: figure of shares of sales
+\end_layout
+
+\begin_layout Subsubsection*
+Input file
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+JPV_JIG
+\backslash
+Trade
+\backslash
+0-Raw_Data
+\backslash
+Sales
+\backslash
+sales_states.csv.xlsx
+\begin_inset Quotes erd
+\end_inset
+
+.
+ The file has 6 columns.
+ The year, the identity of the firm that sells the product 
+\begin_inset Quotes eld
+\end_inset
+
+seller
+\begin_inset Quotes erd
+\end_inset
+
+, the identity of the firm that buys the product 
+\begin_inset Quotes eld
+\end_inset
+
+buyer
+\begin_inset Quotes erd
+\end_inset
+
+, the province where the seller lives 
+\begin_inset Quotes eld
+\end_inset
+
+state_seller
+\begin_inset Quotes erd
+\end_inset
+
+, the province where the buyer lives 
+\begin_inset Quotes eld
+\end_inset
+
+state_buyer
+\begin_inset Quotes erd
+\end_inset
+
+, and finally, the amount of the sale 
+\begin_inset Quotes eld
+\end_inset
+
+amount
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+Some notation:
+\end_layout
+
+\begin_layout Standard
+Let's refer to firms (seller or buyer) with lower case letters and to provinces
+ to upper case letters.
+ Let's refer to firm 
+\begin_inset Formula $i$
+\end_inset
+
+ in province 
+\begin_inset Formula $P$
+\end_inset
+
+ as 
+\begin_inset Formula $i\in P$
+\end_inset
+
+.
+ Finally, the amount that firm 
+\begin_inset Formula $i\in P$
+\end_inset
+
+ sells to firm 
+\begin_inset Formula $j\in P'$
+\end_inset
+
+ would be 
+\begin_inset Formula $X_{ij,PP'}$
+\end_inset
+
+ (the first subscript represents the seller, the second one the buyer.
+ Then the third one the province of the seller, and the last one the province
+ of the buyer).
+ The unit of observation would be the combination state_buyer-state_seller.
+ So, for example, 
+\begin_inset Formula $PP'$
+\end_inset
+
+ is one unit of observation.
+ Since there are 20 provinces, then there are 400 units of observation (20
+ times 20).
+ 
+\end_layout
+
+\begin_layout Subsubsection*
+For each unit of observation, compute:
+\end_layout
+
+\begin_layout Enumerate
+The number of sellers in the unit of observation 
+\begin_inset Formula $PP'$
+\end_inset
+
+.
+ This is 
+\begin_inset Formula 
+\[
+n_{PP'}\equiv\sum_{j\in P'}\sum_{i\in P}\mathbb{I}(X_{ij,PP'}>0),
+\]
+
+\end_inset
+
+ where 
+\begin_inset Formula $\mathbb{I}(X_{ij,PP'}>0)=1$
+\end_inset
+
+ if 
+\begin_inset Formula $X_{ij,PP'}>0$
+\end_inset
+
+ and zero otherwise.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The share of the largest seller in 
+\begin_inset Formula $PP'$
+\end_inset
+
+.
+ This is 
+\begin_inset Formula 
+\[
+\chi_{PP'}\equiv max\left\{ \dfrac{\sum_{j\in P'}X_{ij,PP'}}{\sum_{k\in P}\sum_{j\in P'}X_{kj,PP'}}\right\} _{i\in P}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Main output 
+\end_layout
+
+\begin_layout Standard
+Produce vertical bars graph where 
+\begin_inset Formula $n_{PP'}$
+\end_inset
+
+ is in the 
+\begin_inset Formula $Y$
+\end_inset
+
+-axis.
+ The 
+\begin_inset Formula $X$
+\end_inset
+
+-axis would have numbers from 1 to 400.
+ Each number would correspond to one interaction betwee the province of
+ the seller and the one of the buyer (the unit of observation).
+ The numbers in the 
+\begin_inset Formula $X$
+\end_inset
+
+-axis would be ordered according to 
+\begin_inset Formula $\chi_{PP'}$
+\end_inset
+
+.
+ Number one would be the combination 
+\begin_inset Formula $PP'$
+\end_inset
+
+ with the lowest 
+\begin_inset Formula $\chi_{PP'}$
+\end_inset
+
+ and number 400 would be the combination 
+\begin_inset Formula $PP'$
+\end_inset
+
+ with the highest 
+\begin_inset Formula $\chi_{PP'}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Note: 
+\series default
+Since there are many units of observations, the bars should be very thin.
+ I would not mind if it looks like a continuous area (actually, this would
+ be preferred!).
+ We can try also with a line graph instead of the vertical bars.
+ Whatever looks better.
+  
+\end_layout
+
+\end_body
+\end_document
