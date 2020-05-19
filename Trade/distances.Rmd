@@ -20,8 +20,7 @@ The purpose of this code is to calculate the distance between two regions weight
 ## Input files
 
 1. `0-Raw_Data/Fips/us_states_coordinates_counties.xlsx`
-2. `0-Raw_Data/Fips/state_codes.txt`
-3. `1-Intermediate_Processed_Data/country_coordinates.dta`
+2. `1-Intermediate_Processed_Data/country_coordinates.dta`
 
 ## Output files
 
@@ -57,7 +56,6 @@ In this step, the data needed it's imported into R. Note that the data sets are 
 
 world_cities <- read_dta("1-Intermediate_Processed_Data/country_coordinates.dta")
 us_counties <- read_xlsx("0-Raw_Data/Fips/us_states_coordinates_counties.xlsx")
-state_codes <- read_delim("0-Raw_Data/Fips/state_codes.txt", "-", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
 ```
 
 # Cleaning and manipulating the data
@@ -81,14 +79,12 @@ Another topic that had to be treated was changing the abbreviation names of the 
 Finally, the columns names are changed to more convenient names. 
 
 ```{r keep-necessary-variables, echo=TRUE}
-# Adding missing state(DC) in "state_codes"
-
-state_codes <- rbind(state_codes, c("District of Columbia", "DC"))
 
 # Selecting the variables of interest
 
 us_counties <- us_counties %>% 
-  transmute(region = state_codes$X1[match(state, state_codes$X2)], subregion = county, subregion_population = population_2010, latitude, longitude)
+  transmute(region = state.name[match(state, state.abb)], subregion = county, subregion_population = population_2010, latitude, longitude) %>% 
+  filter(!is.na(region)) #Delete "DC"
 
 world_cities <- world_cities %>% 
   filter(year == 2010 & country != "USA") %>% 
