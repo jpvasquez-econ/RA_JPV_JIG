@@ -149,7 +149,7 @@ In order to obtain the distances weighted, the original distances are needed in 
 
 The distance between two sub regions is calculated using the "geosphere" library. Additionally, the distance is divided by 1000, because it is required to be expressed in kilometers. At the end, the variables of interest to continue the task are selected. 
 
-```{r distance, echo=TRUE}
+```{r subregion-distances, echo=TRUE}
 regions_subregions <- regions_subregions %>% 
   rowwise() %>% # The next operation can't be made with matrix vectorization, that's why it's computed row by row. 
   mutate(distance_rs = distGeo(c(longitude1, latitude1), c(longitude2, latitude2)) / 1000) %>% 
@@ -163,7 +163,7 @@ First, the original distance is elevated to $\theta$. Every distance between two
 
 Aditionally, the necessary columns are selected and their names are changed. Also, the unique observations are kept. 
 
-```{r subregion-joint-weighted-distances, echo=TRUE}
+```{r region-distances, echo=TRUE}
 theta <- -1
 regions_subregions <- regions_subregions %>% 
   mutate(weighted_distances = weight1 * weight2 * distance_rs^theta) %>% 
@@ -173,8 +173,6 @@ regions_subregions <- regions_subregions %>%
   ungroup() %>% 
   unique() %>% 
   select(iso_o = region1, iso_d = region2, dist)
-
-regions_subregions <- rbind(regions_subregions, c("DistrictofColumbia", "DistrictofColumbia", 0)) # Add DC's distance since it can't be defined by the formula
 ```
 
 ## Export the final data set
