@@ -35,7 +35,7 @@ remove(list = ls())
 # libraries
 # vector of libraries to be used
 
-libs <- c("dplyr", "tidyr", "haven", "styler", "lintr", "readxl", "reshape", "janitor", "geosphere", "readr")
+libs <- c("dplyr", "tidyr", "haven", "styler", "lintr", "readxl", "reshape", "janitor", "geosphere")
 
 # Installing libraries in case they are not installed
 
@@ -49,7 +49,7 @@ lapply(libs, require, character.only=TRUE)
 ```
 # Importing data to R
 
-In this step, the data needed it's imported into R. Note that the data sets are in STATA's and Excel's formats, so that's why the library "haven" and "readxl" were loaded.
+In this step, the data needed it's imported into R. Note that the data sets are in STATA's and Excel's formats, so that's why the libraries "haven" and "readxl" were loaded.
 
 ```{r data-importing}
 # Main inputs
