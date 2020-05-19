@@ -1,0 +1,169 @@
+---
+title: "Plotting a figure of shares of sales in different provinces"
+author: "José Ignacio González Rojas"
+date: "19/5/2020"
+output: 
+  pdf_document:
+    toc: yes
+    df_print: paged
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{mathpazo}
+---
+
+# General information
+
+The purpose of this code is divided in two main objectives. The first one is to calculate the number of sellers from province P to province P', then, to compute the share of the largest seller of province P to province P'. The second objective is to plot an area graphic with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. 
+
+## Input files
+
+1. `0-Raw_Data/Sales/sales_states.csv.xlsx` The file has 6 columns. The year, the identity of the firm that sells the product "seller", the identity of the firm that buys the product "buyer", the province where the seller lives "state_seller", the province where the buyer lives "state_buyer", and finally, the amount of the sale "amount".
+
+## Output files
+
+1. `3-Graphics/a1.eps` This file contains a graphic with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. 
+2. `3-Graphics/a1.png`
+3. `3-Graphics/a1.pdf`
+4. `3-Graphics/a2.eps`
+5. `3-Graphics/a2.png`
+6. `3-Graphics/a2.pdf`
+7. `3-Graphics/b.eps`
+8. `3-Graphics/b.png`
+9. `3-Graphics/b.pdf`
+10. `3-Graphics/l1.eps`
+11. `3-Graphics/l1.png`
+12. `3-Graphics/l1.pdf`
+13. `3-Graphics/l2.eps`
+14. `3-Graphics/l2.png`
+15. `3-Graphics/l2.pdf`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+options(tinytex.verbose = TRUE)
+```
+
+
+```{r packages, message=FALSE, warning=FALSE, cache=FALSE, include=FALSE, results='hide'}
+# libraries
+# vector of libraries to be used
+
+libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2")
+
+# Installing libraries in case they are not installed
+
+for(i in length(libs)){ 
+  if(!(libs[i] %in% installed.packages())) install.packages(libs) 
+}
+
+# Load corresponding libraries
+
+lapply(libs, require, character.only=TRUE)
+```
+
+# Importing data to R
+
+In this step, the data needed it's imported into R. Note that the data sets are in Comma-Separated Values format, so that's why the library "readr" was loaded.
+
+```{r data-importing, echo=TRUE}
+# Main inputs
+
+sales_states <- read_csv("0-Raw_Data/Sales/sales_states.csv")
+```
+
+# Cleaning the data
+
+## Cleaning variable names
+
+The library "janitor" helps standardizing the variable names to the *snake_case*'s format. 
+```{r cleaning-variable-names, echo=TRUE}
+sales_states <- janitor::clean_names(sales_states)
+```
+
+# Manipulating the data
+
+Before plotting the requested graphic, the data needs to manipulated in order to create some variables. 
+
+## Computing the number of sellers in the observation PP'
+
+The number of sellers from province P to province P' is calculated by counting the seller that made at least one transaction. 
+
+```{r number-of-sellers, echo=TRUE}
+number_of_sellers <- sales_states %>%
+  group_by(state_seller, state_buyer) %>%
+  count(seller) %>% 
+  count()
+```
+
+## Calculating the share of the largest seller in the observation PP'
+
+The share of the largest seller in the observation PP' calculus can be splitted in two parts. First, the sum of all the sales of a seller i in the observation PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are calculated and the maximum observation is selected. 
+
+```{r share-of-the-largest-seller, echo=TRUE}
+share_largest_seller <- sales_states %>%
+  group_by(state_seller, state_buyer, seller) %>% 
+  mutate(seller_sales = sum(amount)) %>% 
+  ungroup() %>% 
+  group_by(state_seller, state_buyer) %>%
+  transmute(share = seller_sales / sum(amount)) %>% 
+  select(state_seller, state_buyer, share) %>% 
+  top_n(1, share) %>% 
+  unique()
+```
+
+## Joining the data sets
+
+The datasets are joined by the "state_seller" and "state_buyer" variables and the "n" and "share" variables are kept. Also, a the data is sorted to comply with the plot structure. This is accomplished by creating the variable "xpp" which is a sequence from 1 to 400.
+
+```{r joining-the-datasets, echo=TRUE}
+final <- merge(number_of_sellers, share_largest_seller) %>% 
+  arrange(share) %>% 
+  mutate(xpp = seq(n())) %>% 
+  rename(npp = n)
+```
+
+# Plotting the data
+
+First, three options of graphics are given: area, line and bar plots. The line and area plots have different versions. Then, the graphics are exported to .eps and .png files. 
+
+## Bar plot 
+
+```{r bar-plot, echo=TRUE}
+base <- ggplot(data = final, aes(x = xpp, y = npp)) 
+b <- base + geom_bar(stat = "identity", fill="#0078b5", width=0.05)
+b
+```
+
+## Line plot 
+
+```{r line-plot, echo=TRUE}
+l1 <- base + geom_line(color="#0078b5", size = 0.25) + ylim(0, 61)
+l1
+l2 <- base + geom_line(color="#0078b5", size = 0.25)
+l2
+```
+## Area plot 
+
+```{r area-plot, echo=TRUE}
+a1 <- base + geom_area(fill="#0078b5", alpha=0.75)
+a1
+a2 <- base + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
+a2
+```
+
+## Exporting the graphics
+
+Each of the graphics are exported to .eps and .png files. 
+
+```{r exporting-the-graphics, echo=TRUE}
+formats <- c("eps", "png", "pdf")
+for(i in formats){
+  ggsave(filename = paste0("a1.",i), plot = a1, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("a2.",i), plot = a2, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("b.",i), plot = b, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("l1.",i), plot = l1, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("l2.",i), plot = l2, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+}
+```
