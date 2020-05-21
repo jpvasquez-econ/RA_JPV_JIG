@@ -192,23 +192,65 @@ distances <- coordinates %>%
   mutate(dist = if_else(dist == 0, 1, dist))%>% 
   mutate(dist = log(dist))%>% 
   ungroup() %>% #The reverse command of rowwise()
-  select(-lon1, -lon2, -lat1, -lat2)
+  select(state_seller = state1, state_buyer = state2, dist)
 ```
 
 ## Regressing the indicator variable
 
-In this step the indicator variable of the firm i in the sector S selling to the firm j in the sector S' is explained by the log of the distances between the firm i in the province P and the firm j in the province P'. Then, only the constants are kept in a dataframe. 
+In this step the indicator variable of the firm i in the sector S selling to the firm j in the sector S' is explained by the log of the distances between the firm i in the province P and the firm j in the province P'. 
 
-```{r regressions, eval=FALSE, include=FALSE}
-regressions <- sales_states %>% 
-  filter(year == yr) %>% 
-  group_by(sector_seller, sector_buyer) %>% 
-  do(model = lm(indicator ~ dist, data = .)) %>% 
-  rowwise() %>% 
-  tidy(model) %>%
-  ungroup() %>% 
-  filter(term == "(Intercept)") %>% 
-  select(sector_seller, sector_buyer, term, estimate) 
+Because of the size of the data set, the amount of data loaded in R simultaneously is a concern. So, the regressions were made by each observation SS' separately instead of grouping by.  
+
+First, the data frame is filtered by the year of interest. Second, a list of all the sectors in the economy is obtained. Third, a dataframe where all the coefficients with their respective observations SS' was created. Fourth, for each pair of sectors SS' in the economy all the firms are combined with each other in the direction of selling-buying. There were two vectors created to store all the firms in each sector (a). The pairs were done by combining a seller with all the possible buyers in the sector, the another seller with all the buyers, and so on (b). It was important to keep the state of each firm and its sector to then join the dataset with the distances and the amounts sold to each firm. Fifth, each combination is added to the original dataframe. Sixth, the distances were matched with their respective combinations of provinces PP'. Seventh, the amount sold by each firm to another one is joined (b) by filtering the original input dataframe by the corresponding observation SS' (a). Eight, as there were missing values as expected, these were replaced with 0 as no sellings were made. Ninth, the indicator variable is created if there were sales made from the firm i to the firm j. Finally, in the tenth place the regression for SS' is made (a) and then appended to the "alpha_ss" dataframe (b). 
+
+```{r data-manipulation-regressions, echo = TRUE}
+sales_states_yr <- sales_states %>% # 1
+  filter(year == yr) 
+
+sectors <- sales_states_yr %>% #2
+  select(sector_seller) %>% 
+  unique()
+
+alpha_ss <- data.frame(sector_i = c(NA), sector_j = c(NA), alpha = c(NA)) #3
+
+for (i in sectors$sector_seller){ # 4 (a)
+  for (j in sectors$sector_seller){
+    sector_i_firms <- sales_states_yr %>% 
+      filter(sector_seller == i) %>% 
+      select(seller, state_seller, sector_seller) %>% 
+      unique()
+    
+    sector_j_firms <- sales_states_yr %>% 
+      filter(sector_buyer == j) %>% 
+      select(buyer, state_buyer, sector_buyer) %>%  
+      unique()
+    
+    firms_trade <- data.frame(seller = c(NA), state_seller = c(NA), sector_seller = c(NA), buyer = c(NA), state_buyer = c(NA), sector_buyer = c(NA))
+    
+    for (k in sector_i_firms$seller){# 4 (b)
+      temp_df <- data.frame(seller = k, state_seller = sector_i_firms$state_seller[sector_i_firms$seller == k], sector_seller = sector_i_firms$sector_seller[sector_i_firms$seller == k], buyer = sector_j_firms$buyer)
+      temp_df <- left_join(temp_df, sector_j_firms)
+      firms_trade <- rbind(firms_trade, temp_df) # 5
+    }
+    firms_trade <- left_join(firms_trade, distances) # 6
+    sales_states_yr_sectors_ij <- sales_states_yr %>% #7 (a)
+      filter(sector_seller == i & sector_buyer == j) %>%
+      select(-year)
+      
+    sales_states_yr_sectors_ij_matched <- left_join(firms_trade, sales_states_yr_sectors_ij) %>% # 7 (b)
+      mutate(amount = if_else(is.na(amount), 0, amount)) %>% # 8
+      mutate(indicator = if_else(amount > 0, 1, 0)) %>% # 9
+      filter(seller != is.na(seller))
+    
+    model <- lm(indicator ~ dist, data = sales_states_yr_sectors_ij_matched) %>% # 10 (a)
+      tidy()
+    
+    alpha_ss <- rbind(alpha_ss, c(i, j, model$estimate[model$term == "(Intercept)"])) # 10 (b)
+  }
+}
+
+alpha_ss <- alpha_ss %>% 
+  filter(sector_i != is.na(sector_i))
 ```
 
 ## Joining the data sets
@@ -225,8 +267,6 @@ final_s <- merge(share_of_sellers, share_largest_seller_s) %>%
   arrange(share_s) %>% 
   mutate(xpp = seq(n())) %>% 
   select(state_seller, state_buyer, xpp, npp = share_sellers) 
-
-#final_alpha_s <- merge(regressions, share_largest_seller_s)
 ```
 
 # Plotting the data
