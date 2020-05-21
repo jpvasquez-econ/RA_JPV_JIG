@@ -117,7 +117,7 @@ The number of sellers from province P to province P' is calculated by counting t
 number_of_sellers <- sales_states %>%
   group_by(state_seller, state_buyer) %>%
   count(seller) %>% 
-  count() %>%
+  count() %>% 
   ungroup()
 ```
 
@@ -141,10 +141,26 @@ share_largest_seller <- sales_states %>%
 
 The share of the sellers in the observation PP' is the number of sellers divided by the number of observations PP'. 
 
-```{r share-of-the-largest-seller, echo=TRUE}
+```{r share-of-sellers, echo=TRUE}
 share_of_sellers <- number_of_sellers %>% 
   mutate(total = n()) %>% 
   mutate(share_sellers = n / total)
+```
+
+## Calculating the share of the largest seller in the observation SS'
+
+The share of the largest seller in the observation PP' calculus can be splitted in two parts. First, the sum of all the sales of a seller i in the observation PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are calculated and the maximum observation is selected. 
+
+```{r share-of-the-largest-seller-s, echo=TRUE}
+share_largest_seller_s <- sales_states %>%
+  group_by(sector_seller, sector_buyer, seller) %>% 
+  mutate(seller_sales_s = sum(amount)) %>% 
+  ungroup() %>% 
+  group_by(sector_seller, sector_buyer) %>%
+  transmute(share_s = seller_sales_s / sum(amount)) %>% 
+  select(sector_seller, sector_buyer, share_s) %>% 
+  top_n(1, share_s) %>% 
+  unique()
 ```
 
 ## Expanding the data set
@@ -166,7 +182,7 @@ coordinates <- expand.grid.df(coordinates1, coordinates2) # Combines all the row
 
 The distances between two provinces P and P' are calculated with the standard formula. If the distance between two provinces is zero, it's changed to 1. 
 
-```{r share-of-the-largest-seller, echo=TRUE}
+```{r distances, echo=TRUE}
 distances <- coordinates %>% 
   rowwise() %>% # The next operation can't be made with matrix vectorization, that's why it's computed row by row. 
   mutate(dist = distGeo(c(lon1, lat1), c(lon2, lat2)) / 1000) %>% 
@@ -184,12 +200,14 @@ The datasets are joined by the "state_seller" and "state_buyer" variables and th
 final <- merge(number_of_sellers, share_largest_seller) %>% 
   arrange(share) %>% 
   mutate(xpp = seq(n())) %>% 
-  rename(npp = n)
+  mutate(npp = n) %>% 
+  select(state_seller, state_buyer, xpp, npp)
 
 final_s <- merge(share_of_sellers, share_largest_seller) %>% 
   arrange(share) %>% 
   mutate(xpp = seq(n())) %>% 
-  rename(npp = share_sellers)
+  mutate(npp = share_sellers) %>% 
+  select(state_seller, state_buyer, xpp, npp)
 ```
 
 # Plotting the data
