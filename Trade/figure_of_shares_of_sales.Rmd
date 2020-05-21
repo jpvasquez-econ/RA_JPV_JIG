@@ -70,7 +70,7 @@ options(tinytex.verbose = TRUE)
 # libraries
 # vector of libraries to be used
 
-libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2", "lme4", "geosphere", "reshape")
+libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2", "broom", "geosphere", "reshape")
 
 # Installing libraries in case they are not installed
 
@@ -149,10 +149,13 @@ share_of_sellers <- number_of_sellers %>%
 
 ## Calculating the share of the largest seller in the observation SS'
 
-The share of the largest seller in the observation PP' calculus can be splitted in two parts. First, the sum of all the sales of a seller i in the observation PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are calculated and the maximum observation is selected. 
+The share of the largest seller in the observation PP' calculus can be splitted in two parts. First, the sum of all the sales of a seller i in the observation PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are calculated and the maximum observation is selected. Note the year of interest is 2000. 
 
 ```{r share-of-the-largest-seller-s, echo=TRUE}
+yr <- 2000
+
 share_largest_seller_s <- sales_states %>%
+  filter(year == yr) %>% 
   group_by(sector_seller, sector_buyer, seller) %>% 
   mutate(seller_sales_s = sum(amount)) %>% 
   ungroup() %>% 
@@ -180,7 +183,7 @@ coordinates <- expand.grid.df(coordinates1, coordinates2) # Combines all the row
 
 ## Calculating the distances in the observations PP'
 
-The distances between two provinces P and P' are calculated with the standard formula. If the distance between two provinces is zero, it's changed to 1. 
+The distances between two provinces P and P' are calculated with the standard formula. If the distance between two provinces is zero, it's changed to 1. Then, the log is applied to the distances. 
 
 ```{r distances, echo=TRUE}
 distances <- coordinates %>% 
@@ -192,6 +195,22 @@ distances <- coordinates %>%
   select(-lon1, -lon2, -lat1, -lat2)
 ```
 
+## Regressing the indicator variable
+
+In this step the indicator variable of the firm i in the sector S selling to the firm j in the sector S' is explained by the log of the distances between the firm i in the province P and the firm j in the province P'. Then, only the constants are kept in a dataframe. 
+
+```{r regressions, eval=FALSE, include=FALSE}
+regressions <- sales_states %>% 
+  filter(year == yr) %>% 
+  group_by(sector_seller, sector_buyer) %>% 
+  do(model = lm(indicator ~ dist, data = .)) %>% 
+  rowwise() %>% 
+  tidy(model) %>%
+  ungroup() %>% 
+  filter(term == "(Intercept)") %>% 
+  select(sector_seller, sector_buyer, term, estimate) 
+```
+
 ## Joining the data sets
 
 The datasets are joined by the "state_seller" and "state_buyer" variables and the "n" and "share" variables are kept in the first case and the "share_of_sellers" and "share" in the second one. Also, a the data is sorted to comply with the plot structure. This is accomplished by creating the variable "xpp" which is a sequence from 1 to 400.
@@ -200,14 +219,14 @@ The datasets are joined by the "state_seller" and "state_buyer" variables and th
 final <- merge(number_of_sellers, share_largest_seller) %>% 
   arrange(share) %>% 
   mutate(xpp = seq(n())) %>% 
-  mutate(npp = n) %>% 
-  select(state_seller, state_buyer, xpp, npp)
+  select(state_seller, state_buyer, xpp, npp = n)
 
-final_s <- merge(share_of_sellers, share_largest_seller) %>% 
-  arrange(share) %>% 
+final_s <- merge(share_of_sellers, share_largest_seller_s) %>% 
+  arrange(share_s) %>% 
   mutate(xpp = seq(n())) %>% 
-  mutate(npp = share_sellers) %>% 
-  select(state_seller, state_buyer, xpp, npp)
+  select(state_seller, state_buyer, xpp, npp = share_sellers) 
+
+#final_alpha_s <- merge(regressions, share_largest_seller_s)
 ```
 
 # Plotting the data
