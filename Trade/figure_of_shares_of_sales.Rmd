@@ -50,7 +50,7 @@ options(tinytex.verbose = TRUE)
 # libraries
 # vector of libraries to be used
 
-libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2")
+libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2", "lme4")
 
 # Installing libraries in case they are not installed
 
@@ -94,7 +94,8 @@ The number of sellers from province P to province P' is calculated by counting t
 number_of_sellers <- sales_states %>%
   group_by(state_seller, state_buyer) %>%
   count(seller) %>% 
-  count()
+  count() %>%
+  ungroup()
 ```
 
 ## Calculating the share of the largest seller in the observation PP'
@@ -113,15 +114,30 @@ share_largest_seller <- sales_states %>%
   unique()
 ```
 
+## Computing the share of sellers in the observation PP'
+
+The share of the sellers in the observation PP' is the number of sellers divided by the number of observations PP'. 
+
+```{r share-of-the-largest-seller, echo=TRUE}
+share_of_sellers <- number_of_sellers %>% 
+  mutate(total = n()) %>% 
+  mutate(share_sellers = n / total)
+```
+
 ## Joining the data sets
 
-The datasets are joined by the "state_seller" and "state_buyer" variables and the "n" and "share" variables are kept. Also, a the data is sorted to comply with the plot structure. This is accomplished by creating the variable "xpp" which is a sequence from 1 to 400.
+The datasets are joined by the "state_seller" and "state_buyer" variables and the "n" and "share" variables are kept in the first case and the "share_of_sellers" and "share" in the second one. Also, a the data is sorted to comply with the plot structure. This is accomplished by creating the variable "xpp" which is a sequence from 1 to 400.
 
 ```{r joining-the-datasets, echo=TRUE}
 final <- merge(number_of_sellers, share_largest_seller) %>% 
   arrange(share) %>% 
   mutate(xpp = seq(n())) %>% 
   rename(npp = n)
+
+final_s <- merge(share_of_sellers, share_largest_seller) %>% 
+  arrange(share) %>% 
+  mutate(xpp = seq(n())) %>% 
+  rename(npp = share_sellers)
 ```
 
 # Plotting the data
@@ -134,6 +150,10 @@ First, three options of graphics are given: area, line and bar plots. The line a
 base <- ggplot(data = final, aes(x = xpp, y = npp)) 
 b <- base + geom_bar(stat = "identity", fill="#0078b5", width=0.05)
 b
+
+base_s <- ggplot(data = final_s, aes(x = xpp, y = npp)) 
+b_s <- base_s + geom_bar(stat = "identity", fill="#0078b5", width=0.05)
+b_s
 ```
 
 ## Line plot 
@@ -141,16 +161,24 @@ b
 ```{r line-plot, echo=TRUE}
 l1 <- base + geom_line(color="#0078b5", size = 0.25) + ylim(0, 61)
 l1
+l1_s <- base_s + geom_line(color="#0078b5", size = 0.25) + ylim(0, 1)
+l1_s
 l2 <- base + geom_line(color="#0078b5", size = 0.25)
 l2
+l2_s <- base_s + geom_line(color="#0078b5", size = 0.25)
+l2_s
 ```
 ## Area plot 
 
 ```{r area-plot, echo=TRUE}
 a1 <- base + geom_area(fill="#0078b5", alpha=0.75)
 a1
+a1_s <- base_s + geom_area(fill="#0078b5", alpha=0.75)
+a1_s
 a2 <- base + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
 a2
+a2_s <- base_s + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
+a2_s
 ```
 
 ## Exporting the graphics
@@ -165,5 +193,10 @@ for(i in formats){
   ggsave(filename = paste0("b.",i), plot = b, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
   ggsave(filename = paste0("l1.",i), plot = l1, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
   ggsave(filename = paste0("l2.",i), plot = l2, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("a1_s.",i), plot = a1_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("a2_s.",i), plot = a2_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("b_s.",i), plot = b_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("l1_s.",i), plot = l1_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("l2_s.",i), plot = l2_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
 }
 ```
