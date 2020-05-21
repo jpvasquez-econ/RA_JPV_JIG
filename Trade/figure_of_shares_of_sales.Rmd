@@ -15,11 +15,16 @@ header-includes:
 
 # General information
 
-The purpose of this code is divided in two main objectives. The first one is to calculate the number of sellers from province P to province P', then, to compute the share of the largest seller of province P to province P'. The second objective is to plot an area graphic with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. 
+The purpose of this code is divided in two main objectives. 
+
+The first one is to calculate the number of sellers from province P to province P'. Then, to compute the share of the largest seller of province P to province P'. Also, the share of sellers in PP' that have transactions among each other. Aditionally, the distances in between the provinces P and P'. As well as the share of the largest seller of the sector S to sector S'. Finally, multiple regressions by the pair of sectors SS' to explain the decision of a seller firm in a specific sector to trade with a buyer firm in the sector S' explained by the log of the distance between the provinces P and P'. 
+
+The second objective is to plot an area graphic with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. In adition to plot the constants of the regressions with respect to the share of the largest seller in SS'. 
 
 ## Input files
 
-1. `0-Raw_Data/Sales/sales_states.csv.xlsx` The file has 6 columns. The year, the identity of the firm that sells the product "seller", the identity of the firm that buys the product "buyer", the province where the seller lives "state_seller", the province where the buyer lives "state_buyer", and finally, the amount of the sale "amount".
+1. `0-Raw_Data/Sales/sales_states.csv` The file has 6 columns. The year, the identity of the firm that sells the product "seller", the identity of the firm that buys the product "buyer", the province where the seller lives "state_seller", the province where the buyer lives "state_buyer", and finally, the amount of the sale "amount". 
+2. `0-Raw_Data/Sales/coordinates.csv` The file has 3 columns: the state, the longitude and latitude. 
 
 ## Output files
 
@@ -38,6 +43,21 @@ The purpose of this code is divided in two main objectives. The first one is to 
 13. `3-Graphics/l2.eps`
 14. `3-Graphics/l2.png`
 15. `3-Graphics/l2.pdf`
+16. `3-Graphics/a1_s.eps` This file contains a graphic with the sector in the X-axis, sorted ascendently by the share of the largest seller of the sector P to the sector P', and in the Y-axis the constant of the respective regression.
+17. `3-Graphics/a1_s.png`
+18. `3-Graphics/a1_s.pdf`
+19. `3-Graphics/a2_s.eps`
+20. `3-Graphics/a2_s.png`
+21. `3-Graphics/a2_s.pdf`
+22. `3-Graphics/b_s.eps`
+23. `3-Graphics/b_s.png`
+24. `3-Graphics/b_s.pdf`
+25. `3-Graphics/l1_s.eps`
+26. `3-Graphics/l1_s.png`
+27. `3-Graphics/l1_s.pdf`
+28. `3-Graphics/l2_s.eps`
+29. `3-Graphics/l2_s.png`
+30. `3-Graphics/l2_s.pdf`
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -50,7 +70,7 @@ options(tinytex.verbose = TRUE)
 # libraries
 # vector of libraries to be used
 
-libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2", "lme4")
+libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2", "lme4", "geosphere", "reshape")
 
 # Installing libraries in case they are not installed
 
@@ -71,6 +91,7 @@ In this step, the data needed it's imported into R. Note that the data sets are 
 # Main inputs
 
 sales_states <- read_csv("0-Raw_Data/Sales/sales_states.csv")
+coordinates1 <- read_csv("0-Raw_Data/Sales/coordinates.csv")
 ```
 
 # Cleaning the data
@@ -78,13 +99,15 @@ sales_states <- read_csv("0-Raw_Data/Sales/sales_states.csv")
 ## Cleaning variable names
 
 The library "janitor" helps standardizing the variable names to the *snake_case*'s format. 
+
 ```{r cleaning-variable-names, echo=TRUE}
 sales_states <- janitor::clean_names(sales_states)
+coordinates1 <- janitor::clean_names(coordinates1)
 ```
 
 # Manipulating the data
 
-Before plotting the requested graphic, the data needs to manipulated in order to create some variables. 
+Before plotting the requested graphics, the data needs to manipulated in order to create some variables. 
 
 ## Computing the number of sellers in the observation PP'
 
@@ -122,6 +145,35 @@ The share of the sellers in the observation PP' is the number of sellers divided
 share_of_sellers <- number_of_sellers %>% 
   mutate(total = n()) %>% 
   mutate(share_sellers = n / total)
+```
+
+## Expanding the data set
+
+Here the data set of the coordinates it's expanded and all the possible combinations are found. First, an identical data set it's needed with different column names. 
+
+```{r expansion, echo=TRUE}
+# Duplicate the dataset
+
+coordinates2 <- coordinates1
+
+colnames(coordinates1) <- paste(colnames(coordinates1), "1", sep="") #Adds 1 at the end of the variable name
+colnames(coordinates2) <- paste(colnames(coordinates2), "2", sep="") #Adds 2 at the end of the variable name
+
+coordinates <- expand.grid.df(coordinates1, coordinates2) # Combines all the rows in every possible way 
+```
+
+## Calculating the distances in the observations PP'
+
+The distances between two provinces P and P' are calculated with the standard formula. If the distance between two provinces is zero, it's changed to 1. 
+
+```{r share-of-the-largest-seller, echo=TRUE}
+distances <- coordinates %>% 
+  rowwise() %>% # The next operation can't be made with matrix vectorization, that's why it's computed row by row. 
+  mutate(dist = distGeo(c(lon1, lat1), c(lon2, lat2)) / 1000) %>% 
+  mutate(dist = if_else(dist == 0, 1, dist))%>% 
+  mutate(dist = log(dist))%>% 
+  ungroup() %>% #The reverse command of rowwise()
+  select(-lon1, -lon2, -lat1, -lat2)
 ```
 
 ## Joining the data sets
