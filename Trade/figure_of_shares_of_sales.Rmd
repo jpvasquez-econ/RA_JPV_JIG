@@ -19,7 +19,7 @@ The purpose of this code is divided in two main objectives.
 
 The first one is to calculate the number of sellers from province P to province P'. Then, to compute the share of the largest seller of province P to province P'. Also, the share of sellers in PP' that have transactions among each other. Aditionally, the distances in between the provinces P and P'. As well as the share of the largest seller of the sector S to sector S'. Finally, multiple regressions by the pair of sectors SS' to explain the decision of a seller firm in a specific sector to trade with a buyer firm in the sector S' explained by the log of the distance between the provinces P and P'. 
 
-The second objective is to plot an area graphic with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. In adition to plot the constants of the regressions with respect to the share of the largest seller in SS'. 
+The second objective is to plot an area graphic with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. In adition to plot the intercept of the regressions with respect to the share of the largest seller in SS'. 
 
 ## Input files
 
@@ -28,36 +28,14 @@ The second objective is to plot an area graphic with the provinces in the X-axis
 
 ## Output files
 
-1. `3-Graphics/a1.eps` This file contains a graphic with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. 
-2. `3-Graphics/a1.png`
-3. `3-Graphics/a1.pdf`
-4. `3-Graphics/a2.eps`
-5. `3-Graphics/a2.png`
-6. `3-Graphics/a2.pdf`
-7. `3-Graphics/b.eps`
-8. `3-Graphics/b.png`
-9. `3-Graphics/b.pdf`
-10. `3-Graphics/l1.eps`
-11. `3-Graphics/l1.png`
-12. `3-Graphics/l1.pdf`
-13. `3-Graphics/l2.eps`
-14. `3-Graphics/l2.png`
-15. `3-Graphics/l2.pdf`
-16. `3-Graphics/a1_s.eps` This file contains a graphic with the sector in the X-axis, sorted ascendently by the share of the largest seller of the sector P to the sector P', and in the Y-axis the constant of the respective regression.
-17. `3-Graphics/a1_s.png`
-18. `3-Graphics/a1_s.pdf`
-19. `3-Graphics/a2_s.eps`
-20. `3-Graphics/a2_s.png`
-21. `3-Graphics/a2_s.pdf`
-22. `3-Graphics/b_s.eps`
-23. `3-Graphics/b_s.png`
-24. `3-Graphics/b_s.pdf`
-25. `3-Graphics/l1_s.eps`
-26. `3-Graphics/l1_s.png`
-27. `3-Graphics/l1_s.pdf`
-28. `3-Graphics/l2_s.eps`
-29. `3-Graphics/l2_s.png`
-30. `3-Graphics/l2_s.pdf`
+```{r output-files, include=FALSE}
+output_files <- list.files(path = "3-Graphics", full.names = TRUE, recursive = FALSE, include.dirs = TRUE)
+output_files
+```
+
+1. ._pp files: These files contain graphics with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. 
+2. ._pp_s files: These files contain graphics with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the share of the sellers in PP'. 
+3. ._ss_s files: These files contain graphics with the sectors in the X-axis, sorted ascendently by the share of the largest seller of the sector S to the sector S', and in the Y-axis the intercept of the corresponding regression. 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -276,38 +254,60 @@ First, three options of graphics are given: area, line and bar plots. The line a
 ## Bar plot 
 
 ```{r bar-plot, echo=TRUE}
-base <- ggplot(data = final, aes(x = xpp, y = npp)) 
-b <- base + geom_bar(stat = "identity", fill="#0078b5", width=0.05)
-b
+base_pp <- ggplot(data = final_pp, aes(x = xpp, y = npp)) 
+b_pp <- base_pp + geom_bar(stat = "identity", fill="#0078b5")
+b_pp
 
-base_s <- ggplot(data = final_s, aes(x = xpp, y = npp)) 
-b_s <- base_s + geom_bar(stat = "identity", fill="#0078b5", width=0.05)
-b_s
+base_pp_s <- ggplot(data = final_pp_s, aes(x = xpp, y = npp)) 
+b_pp_s <- base_pp_s + geom_bar(stat = "identity", fill="#0078b5")
+b_pp_s
+
+base_ss_s <- ggplot(data = final_ss_s, aes(x = xpp, y = npp)) 
+b_ss_s <- base_ss_s + geom_bar(stat = "identity", fill="#0078b5")
+b_ss_s
 ```
 
 ## Line plot 
 
 ```{r line-plot, echo=TRUE}
-l1 <- base + geom_line(color="#0078b5", size = 0.25) + ylim(0, 61)
-l1
-l1_s <- base_s + geom_line(color="#0078b5", size = 0.25) + ylim(0, 1)
-l1_s
-l2 <- base + geom_line(color="#0078b5", size = 0.25)
-l2
-l2_s <- base_s + geom_line(color="#0078b5", size = 0.25)
-l2_s
+l1_pp <- base_pp + geom_line(color="#0078b5", size = 0.25) + ylim(0, 61)
+l1_pp
+
+l1_pp_s <- base_pp_s + geom_line(color="#0078b5", size = 0.25) + ylim(0, 1)
+l1_pp_s
+
+l1_ss_s <- base_ss_s + geom_line(color="#0078b5", size = 0.25) + ylim(-0.05, 0.05)
+l1_ss_s
+
+l2_pp <- base_pp + geom_line(color="#0078b5", size = 0.25)
+l2_pp
+
+l2_pp_s <- base_pp_s + geom_line(color="#0078b5", size = 0.25)
+l2_pp_s
+
+l2_ss_s <- base_ss_s + geom_line(color="#0078b5", size = 0.25)
+l2_ss_s
 ```
 ## Area plot 
 
 ```{r area-plot, echo=TRUE}
-a1 <- base + geom_area(fill="#0078b5", alpha=0.75)
-a1
-a1_s <- base_s + geom_area(fill="#0078b5", alpha=0.75)
-a1_s
-a2 <- base + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
-a2
-a2_s <- base_s + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
-a2_s
+a1_pp <- base_pp + geom_area(fill="#0078b5", alpha=0.75)
+a1_pp
+
+a1_pp_s <- base_pp_s + geom_area(fill="#0078b5", alpha=0.75)
+a1_pp_s
+
+a1_ss_s <- base_ss_s + geom_area(fill="#0078b5", alpha=0.75)
+a1_ss_s
+
+a2_pp <- base_pp + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
+a2_pp
+
+a2_pp_s <- base_pp_s + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
+a2_pp_s
+
+a2_ss_s <- base_ss_s + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
+a2_ss_s
 ```
 
 ## Exporting the graphics
@@ -317,15 +317,20 @@ Each of the graphics are exported to .eps and .png files.
 ```{r exporting-the-graphics, echo=TRUE}
 formats <- c("eps", "png", "pdf")
 for(i in formats){
-  ggsave(filename = paste0("a1.",i), plot = a1, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
-  ggsave(filename = paste0("a2.",i), plot = a2, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
-  ggsave(filename = paste0("b.",i), plot = b, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
-  ggsave(filename = paste0("l1.",i), plot = l1, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
-  ggsave(filename = paste0("l2.",i), plot = l2, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
-  ggsave(filename = paste0("a1_s.",i), plot = a1_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
-  ggsave(filename = paste0("a2_s.",i), plot = a2_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
-  ggsave(filename = paste0("b_s.",i), plot = b_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
-  ggsave(filename = paste0("l1_s.",i), plot = l1_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
-  ggsave(filename = paste0("l2_s.",i), plot = l2_s, path = "3-Graphics", device = i, width = 7.55, height = 4.25, dpi = 1200)
+  ggsave(filename = paste0("a1_pp.",i), plot = a1_pp, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("a2_pp.",i), plot = a2_pp, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("b_pp.",i), plot = b_pp, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("l1_pp.",i), plot = l1_pp, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("l2_pp.",i), plot = l2_pp, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("a1_pp_s.",i), plot = a1_pp_s, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("a2_pp_s.",i), plot = a2_pp_s, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("b_pp_s.",i), plot = b_pp_s, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("l1_pp_s.",i), plot = l1_pp_s, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("l2_pp_s.",i), plot = l2_pp_s, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("a1_ss_s.",i), plot = a1_ss_s, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("a2_ss_s.",i), plot = a2_ss_s, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("b_ss_s.",i), plot = b_ss_s, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("l1_ss_s.",i), plot = l1_ss_s, path = "3-Graphics", device = i)
+  ggsave(filename = paste0("l2_ss_s.",i), plot = l2_ss_s, path = "3-Graphics", device = i)
 }
 ```
