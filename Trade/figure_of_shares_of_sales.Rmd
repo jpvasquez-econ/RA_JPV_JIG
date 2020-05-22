@@ -117,12 +117,40 @@ share_largest_seller_pp <- sales_states %>%
 
 ## Computing the share of sellers in the observation PP'
 
-The share of the sellers in the observation PP' is the number of sellers divided by the number of observations PP'. 
+The share of the sellers in the observation PP' is the number of sellers in PP' divided by the total combinations of the firms in PP', even if they don't sell to each other. The firms in each observations PP' are combined. Then, the number of sellers is divided by the count of combinations per observation PP'. Each observation is calculated separately and added to a dataframe. 
 
-```{r share-of-sellers-pp-s, echo=TRUE}
+```{r total-firms-per-PP', echo=TRUE}
+states <- sales_states %>% 
+  select(state_seller) %>% 
+  unique()
+
+firms <- data.frame(state_seller = c(NA), state_buyer = c(NA), total_firms = c(NA)) 
+
+for (i in states$state_seller){ 
+  for (j in states$state_seller){
+    state_i_firms <- sales_states %>% 
+      filter(state_seller == i) %>% 
+      select(seller, state_seller, sector_seller) %>% 
+      unique()
+    
+    state_j_firms <- sales_states %>% 
+      filter(state_buyer == j) %>% 
+      select(buyer, state_buyer, sector_buyer) %>%  
+      unique()
+    
+    firms_pp <- expand.grid.df(state_i_firms, state_j_firms) %>% 
+      filter(seller != buyer)
+    
+    firms <- rbind(firms, c(i, j, count(firms_pp)$n))
+  }
+}
+
+firms <- firms %>% 
+  filter(state_seller != is.na(state_seller))
+
 share_of_sellers <- number_of_sellers %>% 
-  mutate(total = n()) %>% 
-  mutate(share_sellers = n / total)
+  left_join(firms) %>% 
+  mutate(share_sellers = n / total_firms)
 ```
 
 ## Calculating the share of the largest seller in the observation SS'
@@ -203,8 +231,9 @@ for (i in sectors$sector_seller){ # 4 (a)
       select(buyer, state_buyer, sector_buyer) %>%  
       unique()
     
-    firms_trade <- expand.grid.df(sector_j_firms, sector_i_firms) %>% #4 (b) and 5
-      left_join(distances) # 6
+    firms_trade <- expand.grid.df(sector_i_firms, sector_j_firms) %>% #4 (b) and 5
+      left_join(distances) %>% # 6
+      filter(seller != buyer)
     
     sales_states_yr_sectors_ij <- sales_states_yr %>% #7 (a)
       filter(sector_seller == i & sector_buyer == j) %>%
@@ -270,13 +299,13 @@ b_ss_s
 ## Line plot 
 
 ```{r line-plot, echo=TRUE}
-l1_pp <- base_pp + geom_line(color="#0078b5", size = 0.25) + ylim(0, 61)
+l1_pp <- base_pp + geom_line(color="#0078b5", size = 0.25) + ylim(0, 90)
 l1_pp
 
-l1_pp_s <- base_pp_s + geom_line(color="#0078b5", size = 0.25) + ylim(0, 1)
+l1_pp_s <- base_pp_s + geom_line(color="#0078b5", size = 0.25) + ylim(0, 0.0375)
 l1_pp_s
 
-l1_ss_s <- base_ss_s + geom_line(color="#0078b5", size = 0.25) + ylim(-0.05, 0.05)
+l1_ss_s <- base_ss_s + geom_line(color="#0078b5", size = 0.25) + ylim(-0.04, 0.04)
 l1_ss_s
 
 l2_pp <- base_pp + geom_line(color="#0078b5", size = 0.25)
