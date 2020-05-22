@@ -113,7 +113,7 @@ Before plotting the requested graphics, the data needs to manipulated in order t
 
 The number of sellers from province P to province P' is calculated by counting the seller that made at least one transaction. 
 
-```{r number-of-sellers, echo=TRUE}
+```{r number-of-sellers-pp, echo=TRUE}
 number_of_sellers <- sales_states %>%
   group_by(state_seller, state_buyer) %>%
   count(seller) %>% 
@@ -125,15 +125,15 @@ number_of_sellers <- sales_states %>%
 
 The share of the largest seller in the observation PP' calculus can be splitted in two parts. First, the sum of all the sales of a seller i in the observation PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are calculated and the maximum observation is selected. 
 
-```{r share-of-the-largest-seller, echo=TRUE}
-share_largest_seller <- sales_states %>%
+```{r share-of-the-largest-seller-pp, echo=TRUE}
+share_largest_seller_pp <- sales_states %>%
   group_by(state_seller, state_buyer, seller) %>% 
   mutate(seller_sales = sum(amount)) %>% 
   ungroup() %>% 
   group_by(state_seller, state_buyer) %>%
-  transmute(share = seller_sales / sum(amount)) %>% 
-  select(state_seller, state_buyer, share) %>% 
-  top_n(1, share) %>% 
+  transmute(share_pp = seller_sales / sum(amount)) %>% 
+  select(state_seller, state_buyer, share_pp) %>% 
+  top_n(1, share_pp) %>% 
   unique()
 ```
 
@@ -141,7 +141,7 @@ share_largest_seller <- sales_states %>%
 
 The share of the sellers in the observation PP' is the number of sellers divided by the number of observations PP'. 
 
-```{r share-of-sellers, echo=TRUE}
+```{r share-of-sellers-pp-s, echo=TRUE}
 share_of_sellers <- number_of_sellers %>% 
   mutate(total = n()) %>% 
   mutate(share_sellers = n / total)
@@ -151,18 +151,18 @@ share_of_sellers <- number_of_sellers %>%
 
 The share of the largest seller in the observation PP' calculus can be splitted in two parts. First, the sum of all the sales of a seller i in the observation PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are calculated and the maximum observation is selected. Note the year of interest is 2000. 
 
-```{r share-of-the-largest-seller-s, echo=TRUE}
+```{r share-of-the-largest-seller-ss-s, echo=TRUE}
 yr <- 2000
 
-share_largest_seller_s <- sales_states %>%
+share_largest_seller_ss <- sales_states %>%
   filter(year == yr) %>% 
   group_by(sector_seller, sector_buyer, seller) %>% 
   mutate(seller_sales_s = sum(amount)) %>% 
   ungroup() %>% 
   group_by(sector_seller, sector_buyer) %>%
-  transmute(share_s = seller_sales_s / sum(amount)) %>% 
-  select(sector_seller, sector_buyer, share_s) %>% 
-  top_n(1, share_s) %>% 
+  mutate(share_pp_s = seller_sales_s / sum(amount)) %>% 
+  select(sector_seller, sector_buyer, share_pp_s) %>% 
+  top_n(1, share_pp_s) %>% 
   unique()
 ```
 
@@ -203,7 +203,7 @@ Because of the size of the data set, the amount of data loaded in R simultaneous
 
 First, the data frame is filtered by the year of interest. Second, a list of all the sectors in the economy is obtained. Third, a dataframe where all the coefficients with their respective observations SS' was created. Fourth, for each pair of sectors SS' in the economy all the firms are combined with each other in the direction of selling-buying. There were two vectors created to store all the firms in each sector (a). The pairs were done by combining a seller with all the possible buyers in the sector, the another seller with all the buyers, and so on (b). It was important to keep the state of each firm and its sector to then join the dataset with the distances and the amounts sold to each firm. Fifth, each combination is added to the original dataframe. Sixth, the distances were matched with their respective combinations of provinces PP'. Seventh, the amount sold by each firm to another one is joined (b) by filtering the original input dataframe by the corresponding observation SS' (a). Eight, as there were missing values as expected, these were replaced with 0 as no sellings were made. Ninth, the indicator variable is created if there were sales made from the firm i to the firm j. Finally, in the tenth place the regression for SS' is made (a) and then appended to the "alpha_ss" dataframe (b). 
 
-```{r data-manipulation-regressions, echo = TRUE}
+```{r expansion-data-manipulation-regressions}
 sales_states_yr <- sales_states %>% # 1
   filter(year == yr) 
 
@@ -211,7 +211,7 @@ sectors <- sales_states_yr %>% #2
   select(sector_seller) %>% 
   unique()
 
-alpha_ss <- data.frame(sector_i = c(NA), sector_j = c(NA), alpha = c(NA)) #3
+alpha_ss <- data.frame(sector_seller = c(NA), sector_buyer = c(NA), alpha = c(NA)) #3
 
 for (i in sectors$sector_seller){ # 4 (a)
   for (j in sectors$sector_seller){
@@ -225,24 +225,19 @@ for (i in sectors$sector_seller){ # 4 (a)
       select(buyer, state_buyer, sector_buyer) %>%  
       unique()
     
-    firms_trade <- data.frame(seller = c(NA), state_seller = c(NA), sector_seller = c(NA), buyer = c(NA), state_buyer = c(NA), sector_buyer = c(NA))
+    firms_trade <- expand.grid.df(sector_j_firms, sector_i_firms) %>% #4 (b) and 5
+      left_join(distances) # 6
     
-    for (k in sector_i_firms$seller){# 4 (b)
-      temp_df <- data.frame(seller = k, state_seller = sector_i_firms$state_seller[sector_i_firms$seller == k], sector_seller = sector_i_firms$sector_seller[sector_i_firms$seller == k], buyer = sector_j_firms$buyer)
-      temp_df <- left_join(temp_df, sector_j_firms)
-      firms_trade <- rbind(firms_trade, temp_df) # 5
-    }
-    firms_trade <- left_join(firms_trade, distances) # 6
     sales_states_yr_sectors_ij <- sales_states_yr %>% #7 (a)
       filter(sector_seller == i & sector_buyer == j) %>%
-      select(-year)
-      
-    sales_states_yr_sectors_ij_matched <- left_join(firms_trade, sales_states_yr_sectors_ij) %>% # 7 (b)
+      select(-year) 
+    
+    sales_states_yr_sectors_ij <- left_join(firms_trade, sales_states_yr_sectors_ij) %>% # 7 (b)
       mutate(amount = if_else(is.na(amount), 0, amount)) %>% # 8
       mutate(indicator = if_else(amount > 0, 1, 0)) %>% # 9
       filter(seller != is.na(seller))
     
-    model <- lm(indicator ~ dist, data = sales_states_yr_sectors_ij_matched) %>% # 10 (a)
+    model <- lm(indicator ~ dist, data = sales_states_yr_sectors_ij) %>% # 10 (a)
       tidy()
     
     alpha_ss <- rbind(alpha_ss, c(i, j, model$estimate[model$term == "(Intercept)"])) # 10 (b)
@@ -250,23 +245,28 @@ for (i in sectors$sector_seller){ # 4 (a)
 }
 
 alpha_ss <- alpha_ss %>% 
-  filter(sector_i != is.na(sector_i))
+  filter(sector_seller != is.na(sector_seller))
 ```
 
 ## Joining the data sets
 
-The datasets are joined by the "state_seller" and "state_buyer" variables and the "n" and "share" variables are kept in the first case and the "share_of_sellers" and "share" in the second one. Also, a the data is sorted to comply with the plot structure. This is accomplished by creating the variable "xpp" which is a sequence from 1 to 400.
+The datasets are joined by the "state_seller" and "state_buyer" variables and the variables preserved are xpp and npp, that correspond to the requested task. Also, a the data is sorted to comply with the plot structure. This is accomplished by creating the variable "xpp" which is a sequence from 1 to $n^2$, where n is the amount of provinces or sectors.
 
 ```{r joining-the-datasets, echo=TRUE}
-final <- merge(number_of_sellers, share_largest_seller) %>% 
-  arrange(share) %>% 
+final_pp <- left_join(number_of_sellers, share_largest_seller_pp) %>% 
+  arrange(share_pp) %>% 
   mutate(xpp = seq(n())) %>% 
   select(state_seller, state_buyer, xpp, npp = n)
 
-final_s <- merge(share_of_sellers, share_largest_seller_s) %>% 
-  arrange(share_s) %>% 
+final_pp_s <- left_join(share_of_sellers, share_largest_seller_pp) %>% 
+  arrange(share_pp) %>% 
   mutate(xpp = seq(n())) %>% 
   select(state_seller, state_buyer, xpp, npp = share_sellers) 
+
+final_ss_s <- left_join(alpha_ss, share_largest_seller_ss) %>% 
+  arrange(share_pp_s) %>% 
+  mutate(xpp = seq(n())) %>% 
+  select(sector_seller, sector_buyer, xpp, npp = alpha)
 ```
 
 # Plotting the data
