@@ -542,5 +542,149 @@ Produce the graphs where the estimated
  
 \end_layout
 
+\begin_layout Section
+New: May 28th
+\end_layout
+
+\begin_layout Standard
+This goes on a new Rmd.
+ Use as an input file 
+\begin_inset Quotes eld
+\end_inset
+
+Trade
+\backslash
+0-Raw_Data
+\backslash
+Sales
+\backslash
+sales_new.csv
+\begin_inset Quotes erd
+\end_inset
+
+.
+ No need to save figures in the folder.
+ It is enough to leave them in the code.
+ There are 4 sub-tasks:
+\end_layout
+
+\begin_layout Subsection
+Number of sellers 
+\end_layout
+
+\begin_layout Standard
+Create four different histograms with the following statistics (use year
+ 2001 only):
+\end_layout
+
+\begin_layout Enumerate
+The number of sellers per buyer (each buyer appears only once)
+\end_layout
+
+\begin_layout Enumerate
+The weighted number of sellers per buyer (each buyer appears only once but
+ each observation is weighted by the sales 
+\begin_inset Quotes eld
+\end_inset
+
+buyer_sales
+\begin_inset Quotes erd
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Enumerate
+The number of sellers per buyer in each sector (each buyer appears as many
+ times as the sectors it buys from 
+\begin_inset Quotes eld
+\end_inset
+
+sector_seller
+\begin_inset Quotes erd
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Enumerate
+The same as 3, but weighing each buyer by the total sales
+\end_layout
+
+\begin_layout Subsection
+How persistent are production linkages?
+\end_layout
+
+\begin_layout Standard
+Calculate the fraction of domestic suppliers (buyers) that are retained
+ between two years (this is called the survival rate).
+ I want 3 numbers per year.
+ Two for buyers (unweighted and weighted), and one for sellers (only unweighted
+ because we do not observe the 
+\begin_inset Quotes eld
+\end_inset
+
+seller_sales
+\begin_inset Quotes erd
+\end_inset
+
+).
+ To be more specific, let's take for example buyer 3 between 2000 and 2001.
+ In 2000 it has sellers 7, 36, 42, 39, 46.
+ In 2001 it retains only seller 7, 46, 39.
+ So the fraction of suppliers that are retained is 60% (3 out of 5).
+ You calculate this number for each firm, and each year.
+ Then average them with and without weights.
+ 
+\end_layout
+
+\begin_layout Standard
+The figures would have on the X-axis the years and on the Y-axis the fractions.
+ In one graphs the weighted and unweighted average for buyers.
+ And in the other one the unweighted average for sellers.
+ Please add a 
+\begin_inset CommandInset href
+LatexCommand href
+name "polynomial fit"
+target "https://datascienceplus.com/fitting-polynomial-regression-r/"
+literal "false"
+
+\end_inset
+
+ for each variable.
+\end_layout
+
+\begin_layout Subsection
+How does the persistence change with firm size?
+\end_layout
+
+\begin_layout Standard
+Here we will focus on creation and survival rates of firm's production links.
+ Creation rates are the fraction of links at a given moment in time that
+ do not appear the previous year for each firm (new links).
+ Here we want to see whether the rates change with firm size.
+ We would only focus on buyers.
+ Two figures: both would have on the X-axis the natural log of buyer sales
+ and on the Y-axis one would have the creation rate and the other one the
+ survival rate.
+ Also add the polynomial fit.
+\end_layout
+
+\begin_layout Subsection
+Duration of the links
+\end_layout
+
+\begin_layout Standard
+call year 0 the first year two firms start a relationship.
+ The idea here is to have a figure that tells us the share of links that
+ remain after one year (year 1), then the share that remain after two years,
+ and so on until year 4.
+ By construction, the share that remain in year 0 is 100%.
+ Let's use only the relations that start before 2005.
+ So the graph would have on the X-axis the year (starting from year 0 until
+ year 4) and on the Y-axis the share.
+ 
+\end_layout
+
 \end_body
 \end_document
