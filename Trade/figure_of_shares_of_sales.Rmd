@@ -2,7 +2,7 @@
 title: "Plotting a figure of shares of sales in different provinces"
 author: "José Ignacio González Rojas"
 date: "19/5/2020"
-output: 
+output:
   pdf_document:
     toc: yes
     df_print: paged
@@ -15,27 +15,44 @@ header-includes:
 
 # General information
 
-The purpose of this code is divided in two main objectives. 
+The purpose of this code is divided in two main objectives.
 
-The first one is to calculate the number of sellers from province P to province P'. Then, to compute the share of the largest seller of province P to province P'. Also, the share of sellers in PP' that have transactions among each other. Aditionally, the distances in between the provinces P and P'. As well as the share of the largest seller of the sector S to sector S'. Finally, multiple regressions by the pair of sectors SS' to explain the decision of a seller firm in a specific sector to trade with a buyer firm in the sector S' explained by the log of the distance between the provinces P and P'. 
+The first one is to calculate the number of sellers from province P to province
+P'. Then, to compute the share of the largest seller of province P to province
+P'. Also, the share of sellers in PP' that have transactions among each other.
+Aditionally, the distances in between the provinces P and P'. As well as the
+share of the largest seller of the sector S to sector S'. Finally, multiple
+regressions by the pair of sectors SS' to explain the decision of a seller firm
+in a specific sector to trade with a buyer firm in the sector S' explained by
+the log of the distance between the provinces P and P'.
 
-The second objective is to plot an area graphic with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. In adition to plot the intercept of the regressions with respect to the share of the largest seller in SS'. 
+The second objective is to plot an area graphic with the provinces in the
+X-axis, sorted ascendently by the share of the largest seller of the province P
+to the province P', and in the Y-axis the number of sellers in the provinces.
+In adition to plot the intercept of the regressions with respect to the share of
+the largest seller in SS'.
 
 ## Input files
 
-1. `0-Raw_Data/Sales/sales_states.csv` The file has 6 columns. The year, the identity of the firm that sells the product "seller", the identity of the firm that buys the product "buyer", the province where the seller lives "state_seller", the province where the buyer lives "state_buyer", and finally, the amount of the sale "amount". 
-2. `0-Raw_Data/Sales/coordinates.csv` The file has 3 columns: the state, the longitude and latitude. 
+1. `0-Raw_Data/Sales/sales_states.csv` The file has 6 columns. The year, the
+identity of the firm that sells the product "seller", the identity of the firm
+that buys the product "buyer", the province where the seller lives
+"state_seller", the province where the buyer lives "state_buyer", and finally,
+the amount of the sale "amount".
+2. `0-Raw_Data/Sales/coordinates.csv` The file has 3 columns: the state, the
+longitude and latitude.
 
 ## Output files
 
-```{r output-files, include=FALSE}
-output_files <- list.files(path = "3-Graphics", full.names = TRUE, recursive = FALSE, include.dirs = TRUE)
-output_files
-```
-
-1. ._pp files: These files contain graphics with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the number of sellers in the provinces. 
-2. ._pp_s files: These files contain graphics with the provinces in the X-axis, sorted ascendently by the share of the largest seller of the province P to the province P', and in the Y-axis the share of the sellers in PP'. 
-3. ._ss_s files: These files contain graphics with the sectors in the X-axis, sorted ascendently by the share of the largest seller of the sector S to the sector S', and in the Y-axis the intercept of the corresponding regression. 
+1. .pp files: These files contain graphics with the provinces in the X-axis,
+sorted ascendently by the share of the largest seller of the province P to the
+province P', and in the Y-axis the number of sellers in the provinces.
+2. .pp_s files: These files contain graphics with the provinces in the X-axis,
+sorted ascendently by the share of the largest seller of the province P to the
+province P', and in the Y-axis the share of the sellers in PP'.
+3. .ss_s files: These files contain graphics with the sectors in the X-axis,
+sorted ascendently by the share of the largest seller of the sector S to the
+sector S', and in the Y-axis the intercept of the corresponding regression.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -48,12 +65,13 @@ options(tinytex.verbose = TRUE)
 # libraries
 # vector of libraries to be used
 
-libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2", "broom", "geosphere", "reshape")
+libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2",
+"broom", "geosphere", "reshape")
 
 # Installing libraries in case they are not installed
 
-for(i in length(libs)){ 
-  if(!(libs[i] %in% installed.packages())) install.packages(libs) 
+for(i in length(libs)){
+  if(!(libs[i] %in% installed.packages())) install.packages(libs)
 }
 
 # Load corresponding libraries
@@ -63,7 +81,8 @@ lapply(libs, require, character.only=TRUE)
 
 # Importing data to R
 
-In this step, the data needed it's imported into R. Note that the data sets are in Comma-Separated Values format, so that's why the library "readr" was loaded.
+In this step, the data needed it's imported into R. Note that the data sets are
+in Comma-Separated Values format, so that's why the library "readr" was loaded.
 
 ```{r data-importing, echo=TRUE}
 # Main inputs
@@ -76,7 +95,8 @@ coordinates1 <- read_csv("0-Raw_Data/Sales/coordinates.csv")
 
 ## Cleaning variable names
 
-The library "janitor" helps standardizing the variable names to the *snake_case*'s format. 
+The library "janitor" helps standardizing the variable names to the
+*snake_case*'s format.
 
 ```{r cleaning-variable-names, echo=TRUE}
 sales_states <- janitor::clean_names(sales_states)
@@ -85,218 +105,270 @@ coordinates1 <- janitor::clean_names(coordinates1)
 
 # Manipulating the data
 
-Before plotting the requested graphics, the data needs to manipulated in order to create some variables. 
+Before plotting the requested graphics, the data needs to manipulated in order
+to create some variables.
 
 ## Computing the number of sellers in the observation PP'
 
-The number of sellers from province P to province P' is calculated by counting the seller that made at least one transaction. 
+The number of sellers from province P to province P' is calculated by counting
+the seller that made at least one transaction.
 
 ```{r number-of-sellers-pp, echo=TRUE}
 number_of_sellers <- sales_states %>%
   group_by(state_seller, state_buyer) %>%
-  count(seller) %>% 
-  count() %>% 
+  count(seller) %>%
+  count() %>%
   ungroup()
 ```
 
 ## Calculating the share of the largest seller in the observation PP'
 
-The share of the largest seller in the observation PP' calculus can be splitted in two parts. First, the sum of all the sales of a seller i in the observation PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are calculated and the maximum observation is selected. 
+The share of the largest seller in the observation PP' calculus can be splitted
+in two parts. First, the sum of all the sales of a seller i in the observation
+PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are
+calculated and the maximum observation is selected.
 
 ```{r share-of-the-largest-seller-pp, echo=TRUE}
 share_largest_seller_pp <- sales_states %>%
-  group_by(state_seller, state_buyer, seller) %>% 
-  mutate(seller_sales = sum(amount)) %>% 
-  ungroup() %>% 
+  group_by(state_seller, state_buyer, seller) %>%
+  mutate(seller_sales = sum(amount)) %>%
+  ungroup() %>%
   group_by(state_seller, state_buyer) %>%
-  transmute(share_pp = seller_sales / sum(amount)) %>% 
-  select(state_seller, state_buyer, share_pp) %>% 
-  top_n(1, share_pp) %>% 
+  transmute(share_pp = seller_sales / sum(amount)) %>%
+  select(state_seller, state_buyer, share_pp) %>%
+  top_n(1, share_pp) %>%
   unique()
 ```
 
 ## Computing the share of sellers in the observation PP'
 
-The share of the sellers in the observation PP' is the number of sellers in PP' divided by the total combinations of the firms in PP', even if they don't sell to each other. The firms in each observations PP' are combined. Then, the number of sellers is divided by the count of combinations per observation PP'. Each observation is calculated separately and added to a dataframe. 
+The share of the sellers in the observation PP' is the number of sellers in PP'
+divided by the total combinations of the firms in PP', even if they don't sell
+to each other. The firms in each observations PP' are combined. Then, the number
+of sellers is divided by the count of combinations per observation PP'. Each
+observation is calculated separately and added to a dataframe.
 
 ```{r total-firms-per-PP', echo=TRUE}
-states <- sales_states %>% 
-  select(state_seller) %>% 
+states <- sales_states %>%
+  select(state_seller) %>%
   unique()
 
-firms <- data.frame(state_seller = c(NA), state_buyer = c(NA), total_firms = c(NA)) 
+firms <- data.frame(state_seller = c(NA), state_buyer = c(NA), total_firms = c(NA))
 
-for (i in states$state_seller){ 
+for (i in states$state_seller){
   for (j in states$state_seller){
-    state_i_firms <- sales_states %>% 
-      filter(state_seller == i) %>% 
-      select(seller, state_seller, sector_seller) %>% 
+    state_i_firms <- sales_states %>%
+      filter(state_seller == i) %>%
+      select(seller, state_seller, sector_seller) %>%
       unique()
-    
-    state_j_firms <- sales_states %>% 
-      filter(state_buyer == j) %>% 
-      select(buyer, state_buyer, sector_buyer) %>%  
+
+    state_j_firms <- sales_states %>%
+      filter(state_buyer == j) %>%
+      select(buyer, state_buyer, sector_buyer) %>%
       unique()
-    
-    firms_pp <- expand.grid.df(state_i_firms, state_j_firms) %>% 
+
+    firms_pp <- expand.grid.df(state_i_firms, state_j_firms) %>%
       filter(seller != buyer)
-    
+
     firms <- rbind(firms, c(i, j, count(firms_pp)$n))
   }
 }
 
-firms <- firms %>% 
+firms <- firms %>%
   filter(state_seller != is.na(state_seller))
 
-share_of_sellers <- number_of_sellers %>% 
-  left_join(firms) %>% 
+share_of_sellers <- number_of_sellers %>%
+  left_join(firms) %>%
   mutate(share_sellers = n / total_firms)
 ```
 
 ## Calculating the share of the largest seller in the observation SS'
 
-The share of the largest seller in the observation PP' calculus can be splitted in two parts. First, the sum of all the sales of a seller i in the observation PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are calculated and the maximum observation is selected. Note the year of interest is 2000. 
+The share of the largest seller in the observation PP' calculus can be splitted
+in two parts. First, the sum of all the sales of a seller i in the observation
+PP'. Then, the sales of everyone in the observation PP'. Finally, the shares are
+calculated and the maximum observation is selected. Note the year of interest is
+2000.
 
 ```{r share-of-the-largest-seller-ss-s, echo=TRUE}
 yr <- 2000
 
 share_largest_seller_ss <- sales_states %>%
-  filter(year == yr) %>% 
-  group_by(sector_seller, sector_buyer, seller) %>% 
-  mutate(seller_sales_s = sum(amount)) %>% 
-  ungroup() %>% 
+  filter(year == yr) %>%
+  group_by(sector_seller, sector_buyer, seller) %>%
+  mutate(seller_sales_s = sum(amount)) %>%
+  ungroup() %>%
   group_by(sector_seller, sector_buyer) %>%
-  mutate(share_pp_s = seller_sales_s / sum(amount)) %>% 
-  select(sector_seller, sector_buyer, share_pp_s) %>% 
-  top_n(1, share_pp_s) %>% 
+  mutate(share_pp_s = seller_sales_s / sum(amount)) %>%
+  select(sector_seller, sector_buyer, share_pp_s) %>%
+  top_n(1, share_pp_s) %>%
   unique()
 ```
 
 ## Expanding the data set
 
-Here the data set of the coordinates it's expanded and all the possible combinations are found. First, an identical data set it's needed with different column names. 
+Here the data set of the coordinates it's expanded and all the possible
+combinations are found. First, an identical data set it's needed with different
+column names.
 
 ```{r expansion, echo=TRUE}
 # Duplicate the dataset
 
 coordinates2 <- coordinates1
 
-colnames(coordinates1) <- paste(colnames(coordinates1), "1", sep="") #Adds 1 at the end of the variable name
-colnames(coordinates2) <- paste(colnames(coordinates2), "2", sep="") #Adds 2 at the end of the variable name
+colnames(coordinates1) <- paste(colnames(coordinates1), "1", sep = "") 
+#Adds 1 at the end of the variable name
+colnames(coordinates2) <- paste(colnames(coordinates2), "2", sep = "")
+#Adds 2 at the end of the variable name
 
-coordinates <- expand.grid.df(coordinates1, coordinates2) # Combines all the rows in every possible way 
+coordinates <- expand.grid.df(coordinates1, coordinates2)
+# Combines all the rows in every possible way
 ```
 
 ## Calculating the distances in the observations PP'
 
-The distances between two provinces P and P' are calculated with the standard formula. If the distance between two provinces is zero, it's changed to 1. Then, the log is applied to the distances. 
+The distances between two provinces P and P' are calculated with the standard
+formula. If the distance between two provinces is zero, it's changed to 1. Then,
+the log is applied to the distances.
 
 ```{r distances, echo=TRUE}
-distances <- coordinates %>% 
-  rowwise() %>% # The next operation can't be made with matrix vectorization, that's why it's computed row by row. 
-  mutate(dist = distGeo(c(lon1, lat1), c(lon2, lat2)) / 1000) %>% 
-  mutate(dist = if_else(dist == 0, 1, dist))%>% 
-  mutate(dist = log(dist))%>% 
+distances <- coordinates %>%
+  rowwise() %>% # The next operation can't be made with matrix vectorization,
+                # that's why it's computed row by row.
+  mutate(dist = distGeo(c(lon1, lat1), c(lon2, lat2)) / 1000) %>%
+  mutate(dist = if_else(dist == 0, 1, dist))%>%
+  mutate(dist = log(dist))%>%
   ungroup() %>% #The reverse command of rowwise()
   select(state_seller = state1, state_buyer = state2, dist)
 ```
 
 ## Regressing the indicator variable
 
-In this step the indicator variable of the firm i in the sector S selling to the firm j in the sector S' is explained by the log of the distances between the firm i in the province P and the firm j in the province P'. 
+In this step the indicator variable of the firm i in the sector S selling to the
+firm j in the sector S' is explained by the log of the distances between the
+firm i in the province P and the firm j in the province P'.
 
-Because of the size of the data set, the amount of data loaded in R simultaneously is a concern. So, the regressions were made by each observation SS' separately instead of grouping by.  
+Because of the size of the data set, the amount of data loaded in R
+simultaneously is a concern. So, the regressions were made by each observation
+SS' separately instead of grouping by.
 
-First, the data frame is filtered by the year of interest. Second, a list of all the sectors in the economy is obtained. Third, a dataframe where all the coefficients with their respective observations SS' was created. Fourth, for each pair of sectors SS' in the economy all the firms are combined with each other in the direction of selling-buying. There were two vectors created to store all the firms in each sector (a). The pairs were done by combining a seller with all the possible buyers in the sector, the another seller with all the buyers, and so on (b). It was important to keep the state of each firm and its sector to then join the dataset with the distances and the amounts sold to each firm. Fifth, each combination is added to the original dataframe. Sixth, the distances were matched with their respective combinations of provinces PP'. Seventh, the amount sold by each firm to another one is joined (b) by filtering the original input dataframe by the corresponding observation SS' (a). Eight, as there were missing values as expected, these were replaced with 0 as no sellings were made. Ninth, the indicator variable is created if there were sales made from the firm i to the firm j. Finally, in the tenth place the regression for SS' is made (a) and then appended to the "alpha_ss" dataframe (b). 
+First, the data frame is filtered by the year of interest. Second, a list of all
+the sectors in the economy is obtained. Third, a dataframe where all the
+coefficients with their respective observations SS' was created. Fourth, for
+each pair of sectors SS' in the economy all the firms are combined with each
+other in the direction of selling-buying. There were two vectors created to
+store all the firms in each sector (a). The pairs were done by combining a
+seller with all the possible buyers in the sector, the another seller with all
+the buyers, and so on (b). It was important to keep the state of each firm and
+its sector to then join the dataset with the distances and the amounts sold to
+each firm. Fifth, each combination is added to the original dataframe. Sixth,
+the distances were matched with their respective combinations of provinces PP'.
+Seventh, the amount sold by each firm to another one is joined (b) by filtering
+the original input dataframe by the corresponding observation SS' (a). Eight, as
+there were missing values as expected, these were replaced with 0 as no sellings
+were made. Ninth, the indicator variable is created if there were sales made
+from the firm i to the firm j. Finally, in the tenth place the regression for
+SS' is made (a) and then appended to the "alpha_ss" dataframe (b).
 
 ```{r expansion-data-manipulation-regressions}
 sales_states_yr <- sales_states %>% # 1
-  filter(year == yr) 
+  filter(year == yr)
 
 sectors <- sales_states_yr %>% #2
-  select(sector_seller) %>% 
+  select(sector_seller) %>%
   unique()
 
-alpha_ss <- data.frame(sector_seller = c(NA), sector_buyer = c(NA), alpha = c(NA)) #3
+alpha_ss <- data.frame(sector_seller = c(NA), sector_buyer = c(NA),
+alpha = c(NA)) #3
 
 for (i in sectors$sector_seller){ # 4 (a)
   for (j in sectors$sector_seller){
-    sector_i_firms <- sales_states_yr %>% 
-      filter(sector_seller == i) %>% 
-      select(seller, state_seller, sector_seller) %>% 
+    sector_i_firms <- sales_states_yr %>%
+      filter(sector_seller == i) %>%
+      select(seller, state_seller, sector_seller) %>%
       unique()
-    
-    sector_j_firms <- sales_states_yr %>% 
-      filter(sector_buyer == j) %>% 
-      select(buyer, state_buyer, sector_buyer) %>%  
+
+    sector_j_firms <- sales_states_yr %>%
+      filter(sector_buyer == j) %>%
+      select(buyer, state_buyer, sector_buyer) %>%
       unique()
-    
-    firms_trade <- expand.grid.df(sector_i_firms, sector_j_firms) %>% #4 (b) and 5
+
+    firms_trade <- expand.grid.df(sector_i_firms, sector_j_firms) %>%
+    #4 (b) and 5
       left_join(distances) %>% # 6
       filter(seller != buyer)
-    
+
     sales_states_yr_sectors_ij <- sales_states_yr %>% #7 (a)
       filter(sector_seller == i & sector_buyer == j) %>%
-      select(-year) 
-    
-    sales_states_yr_sectors_ij <- left_join(firms_trade, sales_states_yr_sectors_ij) %>% # 7 (b)
+      select(-year)
+
+    sales_states_yr_sectors_ij <- left_join(firms_trade,
+      sales_states_yr_sectors_ij) %>% # 7 (b)
       mutate(amount = if_else(is.na(amount), 0, amount)) %>% # 8
       mutate(indicator = if_else(amount > 0, 1, 0)) %>% # 9
       filter(seller != is.na(seller))
-    
-    model <- lm(indicator ~ dist, data = sales_states_yr_sectors_ij) %>% # 10 (a)
+
+    model <- lm(indicator ~ dist, data = sales_states_yr_sectors_ij) %>%
+    # 10 (a)
       tidy()
-    
-    alpha_ss <- rbind(alpha_ss, c(i, j, model$estimate[model$term == "(Intercept)"])) # 10 (b)
+
+    alpha_ss <- rbind(alpha_ss, c(i, j,
+      model$estimate[model$term == "(Intercept)"])) # 10 (b)
   }
 }
 
-alpha_ss <- alpha_ss %>% 
+alpha_ss <- alpha_ss %>%
   filter(sector_seller != is.na(sector_seller))
 ```
 
 ## Joining the data sets
 
-The datasets are joined by the "state_seller" and "state_buyer" variables and the variables preserved are xpp and npp, that correspond to the requested task. Also, a the data is sorted to comply with the plot structure. This is accomplished by creating the variable "xpp" which is a sequence from 1 to $n^2$, where n is the amount of provinces or sectors.
+The datasets are joined by the "state_seller" and "state_buyer" variables and
+the variables preserved are xpp and npp, that correspond to the requested task.
+Also, a the data is sorted to comply with the plot structure. This is
+accomplished by creating the variable "xpp" which is a sequence from 1 to $n^2$,
+where n is the amount of provinces or sectors.
 
 ```{r joining-the-datasets, echo=TRUE}
-final_pp <- left_join(number_of_sellers, share_largest_seller_pp) %>% 
-  arrange(share_pp) %>% 
-  mutate(xpp = seq(n())) %>% 
+final_pp <- left_join(number_of_sellers, share_largest_seller_pp) %>%
+  arrange(share_pp) %>%
+  mutate(xpp = seq(n())) %>%
   select(state_seller, state_buyer, xpp, npp = n)
 
-final_pp_s <- left_join(share_of_sellers, share_largest_seller_pp) %>% 
-  arrange(share_pp) %>% 
-  mutate(xpp = seq(n())) %>% 
-  select(state_seller, state_buyer, xpp, npp = share_sellers) 
+final_pp_s <- left_join(share_of_sellers, share_largest_seller_pp) %>%
+  arrange(share_pp) %>%
+  mutate(xpp = seq(n())) %>%
+  select(state_seller, state_buyer, xpp, npp = share_sellers)
 
-final_ss_s <- left_join(alpha_ss, share_largest_seller_ss) %>% 
-  arrange(share_pp_s) %>% 
-  mutate(xpp = seq(n())) %>% 
+final_ss_s <- left_join(alpha_ss, share_largest_seller_ss) %>%
+  arrange(share_pp_s) %>%
+  mutate(xpp = seq(n())) %>%
   select(sector_seller, sector_buyer, xpp, npp = alpha)
 ```
 
 # Plotting the data
 
-First, three options of graphics are given: area, line and bar plots. The line and area plots have different versions. Then, the graphics are exported to .eps and .png files. 
+First, three options of graphics are given: area, line and bar plots. The line
+and area plots have different versions. Then, the graphics are exported to .eps
+and .png files.
 
-## Bar plot 
+## Bar plot
 
 ```{r bar-plot, echo=TRUE}
-base_pp <- ggplot(data = final_pp, aes(x = xpp, y = npp)) 
+base_pp <- ggplot(data = final_pp, aes(x = xpp, y = npp))
 b_pp <- base_pp + geom_bar(stat = "identity", fill="#0078b5")
 b_pp
 
-base_pp_s <- ggplot(data = final_pp_s, aes(x = xpp, y = npp)) 
+base_pp_s <- ggplot(data = final_pp_s, aes(x = xpp, y = npp))
 b_pp_s <- base_pp_s + geom_bar(stat = "identity", fill="#0078b5")
 b_pp_s
 
-base_ss_s <- ggplot(data = final_ss_s, aes(x = xpp, y = npp)) 
+base_ss_s <- ggplot(data = final_ss_s, aes(x = xpp, y = npp))
 b_ss_s <- base_ss_s + geom_bar(stat = "identity", fill="#0078b5")
 b_ss_s
 ```
 
-## Line plot 
+## Line plot
 
 ```{r line-plot, echo=TRUE}
 l1_pp <- base_pp + geom_line(color="#0078b5", size = 0.25) + ylim(0, 90)
@@ -305,7 +377,8 @@ l1_pp
 l1_pp_s <- base_pp_s + geom_line(color="#0078b5", size = 0.25) + ylim(0, 0.0375)
 l1_pp_s
 
-l1_ss_s <- base_ss_s + geom_line(color="#0078b5", size = 0.25) + ylim(-0.04, 0.04)
+l1_ss_s <- base_ss_s + geom_line(color="#0078b5", size = 0.25) +
+ylim(-0.04, 0.04)
 l1_ss_s
 
 l2_pp <- base_pp + geom_line(color="#0078b5", size = 0.25)
@@ -317,7 +390,7 @@ l2_pp_s
 l2_ss_s <- base_ss_s + geom_line(color="#0078b5", size = 0.25)
 l2_ss_s
 ```
-## Area plot 
+## Area plot
 
 ```{r area-plot, echo=TRUE}
 a1_pp <- base_pp + geom_area(fill="#0078b5", alpha=0.75)
@@ -329,37 +402,15 @@ a1_pp_s
 a1_ss_s <- base_ss_s + geom_area(fill="#0078b5", alpha=0.75)
 a1_ss_s
 
-a2_pp <- base_pp + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
+a2_pp <- base_pp + geom_area(fill="#0078b5", alpha=0.75) +
+geom_line(color="#0078b5", size = 0.25)
 a2_pp
 
-a2_pp_s <- base_pp_s + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
+a2_pp_s <- base_pp_s + geom_area(fill="#0078b5", alpha=0.75) +
+geom_line(color="#0078b5", size = 0.25)
 a2_pp_s
 
-a2_ss_s <- base_ss_s + geom_area(fill="#0078b5", alpha=0.75) + geom_line(color="#0078b5", size = 0.25)
+a2_ss_s <- base_ss_s + geom_area(fill="#0078b5", alpha=0.75) +
+geom_line(color="#0078b5", size = 0.25)
 a2_ss_s
-```
-
-## Exporting the graphics
-
-Each of the graphics are exported to .eps and .png files. 
-
-```{r exporting-the-graphics, echo=TRUE}
-formats <- c("eps", "png", "pdf")
-for(i in formats){
-  ggsave(filename = paste0("a1_pp.",i), plot = a1_pp, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("a2_pp.",i), plot = a2_pp, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("b_pp.",i), plot = b_pp, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("l1_pp.",i), plot = l1_pp, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("l2_pp.",i), plot = l2_pp, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("a1_pp_s.",i), plot = a1_pp_s, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("a2_pp_s.",i), plot = a2_pp_s, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("b_pp_s.",i), plot = b_pp_s, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("l1_pp_s.",i), plot = l1_pp_s, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("l2_pp_s.",i), plot = l2_pp_s, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("a1_ss_s.",i), plot = a1_ss_s, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("a2_ss_s.",i), plot = a2_ss_s, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("b_ss_s.",i), plot = b_ss_s, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("l1_ss_s.",i), plot = l1_ss_s, path = "3-Graphics", device = i)
-  ggsave(filename = paste0("l2_ss_s.",i), plot = l2_ss_s, path = "3-Graphics", device = i)
-}
 ```
