@@ -1,0 +1,259 @@
+---
+title: "Plotting different figures about production linkages"
+author: "José Ignacio González Rojas"
+date: "30/05/2020"
+output:
+  pdf_document:
+    toc: yes
+    df_print: paged
+    number_sections: yes
+header-includes:
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{mathpazo}
+---
+
+# General information
+
+The purpose of this code is to create the necessary variables in order to plot a histogram with the count of the sellers per buyer in a specific year, also, this is calculated by sector. These to histograms are also plot with the weights provided by the variable 'buyer_sales'. Also, the share of sellers per buyer and buyers per sellers that he/she still buys/sells from/to between two years. The first one is also weighted by the variable 'buyer_sales'. Finally, the latter variables are plotted in a scatter plot with polynomial fits included. 
+
+## Input files
+
+1. `0-Raw_Data/Sales/sales_new.csv`
+
+## Output files
+
+None. The graphics are kept in code and can be exported to whichever format it's wanted, as well as the dataframes. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+remove(list = ls())
+options(tinytex.verbose = TRUE)
+```
+
+
+```{r packages, message=FALSE, warning=FALSE, cache=FALSE, include=FALSE, results='hide'}
+# libraries
+# vector of libraries to be used
+
+libs <- c(
+  "dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2",
+  "broom", "geosphere", "reshape", "scales", "lubridate"
+)
+
+# Installing libraries in case they are not installed
+
+for (i in length(libs)) {
+  if (!(libs[i] %in% installed.packages())) install.packages(libs)
+}
+
+# Load corresponding libraries
+
+lapply(libs, require, character.only = TRUE)
+```
+
+# Importing data to R
+
+In this step, the data needed it's imported into R. Note that the data sets are
+in Comma-Separated Values format, so that's why the library "readr" was loaded. The year variable is loaded as DateTime to allow *ggplot2* to detect it as a date. This will make easier the labelling of the x-axis. 
+
+```{r data-importing, echo=TRUE}
+# Main inputs
+
+sales_new <- read_csv("0-Raw_Data/Sales/sales_new.csv",
+  col_types = cols(year = col_datetime(format = "%Y"))
+)
+```
+
+# Cleaning the data
+
+## Cleaning variable names
+
+The library "janitor" helps standardizing the variable names to the
+*snake_case*'s format.
+
+```{r cleaning-variable-names, echo=TRUE}
+sales_new <- janitor::clean_names(sales_new)
+```
+
+# Manipulating the data
+
+Before plotting the requested graphics, the data needs to manipulated in order to create some variables described in the general information section. 
+
+## Number of sellers
+
+First, the number of sellers per buyer is calculated, this will be helpful to create the plots in adition to the 'buyer_sales' variable as weights. Then, the number of sellers per buyer in each sector is computed. This will be done to a subset of the data corresponding to the year 2001. 
+
+```{r data-manipulation}
+yr <- "2001-01-01"
+
+sales_new1 <- sales_new %>%
+  filter(year == as.Date(yr)) %>%
+  select(buyer, seller, buyer_sales) %>%
+  count(buyer)
+
+sales_new2 <- sales_new %>%
+  filter(year == as.Date(yr)) %>%
+  select(buyer, seller, buyer_sales) %>%
+  count(buyer, wt = buyer_sales)
+
+sales_new3 <- sales_new %>%
+  filter(year == as.Date(yr)) %>%
+  select(seller_sector, buyer, seller, buyer_sales) %>%
+  count(seller_sector, buyer)
+
+sales_new4 <- sales_new %>%
+  filter(year == as.Date(yr)) %>%
+  select(seller_sector, buyer, seller, buyer_sales) %>%
+  count(seller_sector, buyer, wt = buyer_sales)
+```
+
+## Persistance of the productive linkages between two year: buyers and sellers. 
+
+This code will work for any time series. In the first place, all the unique years from the 'year' variable are put into a vector. Second, the last year is popped because the for-loop needs to stop in the year $T-1$ to calculate the difference between firms in the year $T$. Third, two empty dataframes are created to store the averages of the share of firms that remain from one year to the next one. Fourth, these variables will be created for every year $t-1$ and the next one $t$ for the buyers and sellers. Fifth, for each year $t-1$ the set of links between firms is assigned to a dataframe with their respective weights per buyer. Then, the number of sellers per buyer is calcultated. Sixth, another set of the sellers and buyers in the year $t-1$ and the year $t$ are created. Seventh, only the links between firms that are present in the two consecutive years are kept. Eighth, the number of sellers per buyer is computed in the last list. Ninth, the number of sellers per buyer that remained trading with eachother in year $t$ is matched with the number of sellers per buyer in year $t-1$. The missing vlues are changed by 0's. Tenth, the observations are matched and then the share that remained is divided by the initial number of sellers per buyer. Finally, the mean is calculated per year weighted and unweighted, then, it's added to the empty dataframe the first time and consecutively per year. 
+
+This is done in a similar way for the number of buyers per seller. 
+
+```{r persistance_producitive}
+years <- unique(sales_new$year) # 1
+years <- years[-length(years)] # 2
+
+persistance_buyers <- read.csv(text = "year, mean_share, mean_share_wt") # 3 a
+persistance_sellers <- read.csv(text = "year, mean_share") # 3 b
+
+for (i in as.list(years)) { # 4
+  temp_df1 <- sales_new %>% # 5
+    filter(year == as.Date(i)) %>%
+    select(buyer, buyer_sales) %>%
+    add_count(buyer) %>%
+    distinct()
+
+  temp_df2 <- sales_new %>% # 6 a
+    filter(year == as.Date(i)) %>%
+    select(buyer, seller)
+
+  temp_df3 <- sales_new %>% # 6 b
+    filter(year == as.Date(i) %m+% years(1)) %>%
+    select(buyer, seller)
+
+  temp_df2 <- inner_join(temp_df2, temp_df3) %>% # 7
+    count(buyer) # 8
+
+  temp_df1 <- left_join(temp_df1, temp_df2, by = "buyer") # 9
+
+  temp_df1[is.na(temp_df1)] <- 0
+
+  temp_df1 <- temp_df1 %>%
+    transmute(buyer, share = n.y / n.x, buyer_sales) %>%
+    summarize(mean_share = mean(share), 
+              mean_share_wt = weighted.mean(share, buyer_sales)) # 10
+
+  year <- c(as.Date(i) %m+% years(1))
+  temp_df1 <- cbind(year, temp_df1)
+  persistance_buyers <- rbind(persistance_buyers, temp_df1) # 11
+}
+
+persistance_buyers <- persistance_buyers %>%
+  pivot_longer(cols = mean_share:mean_share_wt)
+
+for (i in as.list(years)) { # 4
+  temp_df1 <- sales_new %>%
+    filter(year == as.Date(i)) %>%
+    select(seller) %>%
+    count(seller)
+
+  temp_df2 <- sales_new %>%
+    filter(year == as.Date(i)) %>%
+    select(buyer, seller)
+
+  temp_df3 <- sales_new %>%
+    filter(year == as.Date(i) %m+% years(1)) %>%
+    select(buyer, seller)
+
+  temp_df2 <- inner_join(temp_df2, temp_df3) %>%
+    count(seller)
+
+  temp_df1 <- left_join(temp_df1, temp_df2, by = "seller")
+
+  temp_df1[is.na(temp_df1)] <- 0
+
+  temp_df1 <- temp_df1 %>%
+    transmute(seller, share = n.y / n.x) %>%
+    summarize(mean_share = mean(share))
+
+  year <- c(as.Date(i) %m+% years(1))
+  temp_df1 <- cbind(year, temp_df1)
+  persistance_sellers <- rbind(persistance_sellers, temp_df1)
+}
+```
+
+# Plotting
+
+The main objective of this task is to plot several relationships between variables. The subsections will respect the order of the tasks proposed. 
+
+## Histograms
+
+These histograms correspond to the task 3.1. The first two graphics show the frequency of how many sellers per buyer are there, the first is unweighted and the second one is weighted by the variable "buyer_sales". 
+
+```{r histograms}
+graph1 <- ggplot(data = sales_new1, aes(x = n)) +
+  geom_histogram(
+    bins = 21,
+    fill = "#0078b5",
+    alpha = 0.9
+  )
+graph1
+
+graph2 <- ggplot(data = sales_new2, aes(x = n)) +
+  geom_histogram(
+    bins = 21,
+    fill = "#0078b5",
+    alpha = 0.9
+  ) +
+  scale_y_continuous(labels = scales::comma_format())
+graph2
+
+graph3 <- ggplot(data = sales_new3, aes(x = n)) +
+  geom_histogram(
+    bins = 21,
+    fill = "#0078b5",
+    alpha = 0.9
+  )
+graph3
+
+graph4 <- ggplot(data = sales_new4, aes(x = n)) +
+  geom_histogram(
+    fill = "#0078b5",
+    alpha = 0.9
+  ) +
+  scale_y_continuous(labels = scales::comma_format())
+graph4
+```
+## Scatter plots
+
+These histograms correspond to the task 3.2. The first two graphics show the share of productive linkages that survived by buyer between two years, indexed by year. Also, this plot was weighted and unweighted. The second graphic is unweighted and it measures the desired phenomenon by seller. Finally, there's a polynomial fit added to the plots and the degree of them can be manipulated. 
+
+```{r scatter-plots}
+degree_poly_buyer <- 3
+degree_poly_seller <- 3
+
+graph5 <- ggplot(data = persistance_buyers, 
+                 aes(x = year, y = value, color = name)) +
+  geom_point() +
+  geom_smooth(
+    method = "lm",
+    se = FALSE,
+    formula = y ~ poly(x, degree_poly_buyer)
+  )
+graph5
+
+graph6 <- ggplot(data = persistance_sellers, aes(x = year, y = mean_share)) +
+  geom_point(aes(colour = "#0078b5")) +
+  geom_smooth(
+    method = "lm",
+    se = FALSE,
+    formula = y ~ poly(x, degree_poly_seller)
+  ) +
+  theme(legend.position = "none")
+graph6
+```

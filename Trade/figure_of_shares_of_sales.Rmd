@@ -65,18 +65,20 @@ options(tinytex.verbose = TRUE)
 # libraries
 # vector of libraries to be used
 
-libs <- c("dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2",
-"broom", "geosphere", "reshape")
+libs <- c(
+  "dplyr", "tidyr", "styler", "lintr", "readr", "janitor", "ggplot2",
+  "broom", "geosphere", "reshape"
+)
 
 # Installing libraries in case they are not installed
 
-for(i in length(libs)){
-  if(!(libs[i] %in% installed.packages())) install.packages(libs)
+for (i in length(libs)) {
+  if (!(libs[i] %in% installed.packages())) install.packages(libs)
 }
 
 # Load corresponding libraries
 
-lapply(libs, require, character.only=TRUE)
+lapply(libs, require, character.only = TRUE)
 ```
 
 # Importing data to R
@@ -153,10 +155,11 @@ states <- sales_states %>%
   select(state_seller) %>%
   unique()
 
-firms <- data.frame(state_seller = c(NA), state_buyer = c(NA), total_firms = c(NA))
+firms <- data.frame(state_seller = c(NA), state_buyer = c(NA), 
+                    total_firms = c(NA))
 
-for (i in states$state_seller){
-  for (j in states$state_seller){
+for (i in states$state_seller) {
+  for (j in states$state_seller) {
     state_i_firms <- sales_states %>%
       filter(state_seller == i) %>%
       select(seller, state_seller, sector_seller) %>%
@@ -216,10 +219,10 @@ column names.
 
 coordinates2 <- coordinates1
 
-colnames(coordinates1) <- paste(colnames(coordinates1), "1", sep = "") 
-#Adds 1 at the end of the variable name
+colnames(coordinates1) <- paste(colnames(coordinates1), "1", sep = "")
+# Adds 1 at the end of the variable name
 colnames(coordinates2) <- paste(colnames(coordinates2), "2", sep = "")
-#Adds 2 at the end of the variable name
+# Adds 2 at the end of the variable name
 
 coordinates <- expand.grid.df(coordinates1, coordinates2)
 # Combines all the rows in every possible way
@@ -234,11 +237,11 @@ the log is applied to the distances.
 ```{r distances, echo=TRUE}
 distances <- coordinates %>%
   rowwise() %>% # The next operation can't be made with matrix vectorization,
-                # that's why it's computed row by row.
+  # that's why it's computed row by row.
   mutate(dist = distGeo(c(lon1, lat1), c(lon2, lat2)) / 1000) %>%
-  mutate(dist = if_else(dist == 0, 1, dist))%>%
-  mutate(dist = log(dist))%>%
-  ungroup() %>% #The reverse command of rowwise()
+  mutate(dist = if_else(dist == 0, 1, dist)) %>%
+  mutate(dist = log(dist)) %>%
+  ungroup() %>% # The reverse command of rowwise()
   select(state_seller = state1, state_buyer = state2, dist)
 ```
 
@@ -274,15 +277,17 @@ SS' is made (a) and then appended to the "alpha_ss" dataframe (b).
 sales_states_yr <- sales_states %>% # 1
   filter(year == yr)
 
-sectors <- sales_states_yr %>% #2
+sectors <- sales_states_yr %>% # 2
   select(sector_seller) %>%
   unique()
 
-alpha_ss <- data.frame(sector_seller = c(NA), sector_buyer = c(NA),
-alpha = c(NA)) #3
+alpha_ss <- data.frame(
+  sector_seller = c(NA), sector_buyer = c(NA),
+  alpha = c(NA)
+) # 3
 
-for (i in sectors$sector_seller){ # 4 (a)
-  for (j in sectors$sector_seller){
+for (i in sectors$sector_seller) { # 4 (a)
+  for (j in sectors$sector_seller) {
     sector_i_firms <- sales_states_yr %>%
       filter(sector_seller == i) %>%
       select(seller, state_seller, sector_seller) %>%
@@ -294,26 +299,30 @@ for (i in sectors$sector_seller){ # 4 (a)
       unique()
 
     firms_trade <- expand.grid.df(sector_i_firms, sector_j_firms) %>%
-    #4 (b) and 5
+      # 4 (b) and 5
       left_join(distances) %>% # 6
       filter(seller != buyer)
 
-    sales_states_yr_sectors_ij <- sales_states_yr %>% #7 (a)
+    sales_states_yr_sectors_ij <- sales_states_yr %>% # 7 (a)
       filter(sector_seller == i & sector_buyer == j) %>%
       select(-year)
 
-    sales_states_yr_sectors_ij <- left_join(firms_trade,
-      sales_states_yr_sectors_ij) %>% # 7 (b)
+    sales_states_yr_sectors_ij <- left_join(
+      firms_trade,
+      sales_states_yr_sectors_ij
+    ) %>% # 7 (b)
       mutate(amount = if_else(is.na(amount), 0, amount)) %>% # 8
       mutate(indicator = if_else(amount > 0, 1, 0)) %>% # 9
       filter(seller != is.na(seller))
 
     model <- lm(indicator ~ dist, data = sales_states_yr_sectors_ij) %>%
-    # 10 (a)
+      # 10 (a)
       tidy()
 
-    alpha_ss <- rbind(alpha_ss, c(i, j,
-      model$estimate[model$term == "(Intercept)"])) # 10 (b)
+    alpha_ss <- rbind(alpha_ss, c(
+      i, j,
+      model$estimate[model$term == "(Intercept)"]
+    )) # 10 (b)
   }
 }
 
@@ -356,61 +365,75 @@ and .png files.
 
 ```{r bar-plot, echo=TRUE}
 base_pp <- ggplot(data = final_pp, aes(x = xpp, y = npp))
-b_pp <- base_pp + geom_bar(stat = "identity", fill="#0078b5")
+b_pp <- base_pp +
+  geom_bar(stat = "identity", fill = "#0078b5")
 b_pp
 
 base_pp_s <- ggplot(data = final_pp_s, aes(x = xpp, y = npp))
-b_pp_s <- base_pp_s + geom_bar(stat = "identity", fill="#0078b5")
+b_pp_s <- base_pp_s +
+  geom_bar(stat = "identity", fill = "#0078b5")
 b_pp_s
 
 base_ss_s <- ggplot(data = final_ss_s, aes(x = xpp, y = npp))
-b_ss_s <- base_ss_s + geom_bar(stat = "identity", fill="#0078b5")
+b_ss_s <- base_ss_s +
+  geom_bar(stat = "identity", fill = "#0078b5")
 b_ss_s
 ```
 
 ## Line plot
 
 ```{r line-plot, echo=TRUE}
-l1_pp <- base_pp + geom_line(color="#0078b5", size = 0.25) + ylim(0, 90)
+l1_pp <- base_pp +
+  geom_line(color = "#0078b5", size = 0.25) + ylim(0, 90)
 l1_pp
 
-l1_pp_s <- base_pp_s + geom_line(color="#0078b5", size = 0.25) + ylim(0, 0.0375)
+l1_pp_s <- base_pp_s +
+  geom_line(color = "#0078b5", size = 0.25) + ylim(0, 0.0375)
 l1_pp_s
 
-l1_ss_s <- base_ss_s + geom_line(color="#0078b5", size = 0.25) +
-ylim(-0.04, 0.04)
+l1_ss_s <- base_ss_s +
+  geom_line(color = "#0078b5", size = 0.25) + ylim(-0.04, 0.04)
 l1_ss_s
 
-l2_pp <- base_pp + geom_line(color="#0078b5", size = 0.25)
+l2_pp <- base_pp +
+  geom_line(color = "#0078b5", size = 0.25)
 l2_pp
 
-l2_pp_s <- base_pp_s + geom_line(color="#0078b5", size = 0.25)
+l2_pp_s <- base_pp_s +
+  geom_line(color = "#0078b5", size = 0.25)
 l2_pp_s
 
-l2_ss_s <- base_ss_s + geom_line(color="#0078b5", size = 0.25)
+l2_ss_s <- base_ss_s +
+  geom_line(color = "#0078b5", size = 0.25)
 l2_ss_s
 ```
 ## Area plot
 
 ```{r area-plot, echo=TRUE}
-a1_pp <- base_pp + geom_area(fill="#0078b5", alpha=0.75)
+a1_pp <- base_pp +
+  geom_area(fill = "#0078b5", alpha = 0.75)
 a1_pp
 
-a1_pp_s <- base_pp_s + geom_area(fill="#0078b5", alpha=0.75)
+a1_pp_s <- base_pp_s +
+  geom_area(fill = "#0078b5", alpha = 0.75)
 a1_pp_s
 
-a1_ss_s <- base_ss_s + geom_area(fill="#0078b5", alpha=0.75)
+a1_ss_s <- base_ss_s +
+  geom_area(fill = "#0078b5", alpha = 0.75)
 a1_ss_s
 
-a2_pp <- base_pp + geom_area(fill="#0078b5", alpha=0.75) +
-geom_line(color="#0078b5", size = 0.25)
+a2_pp <- base_pp +
+  geom_area(fill = "#0078b5", alpha = 0.75) + geom_line(color = "#0078b5", 
+                                                        size = 0.25)
 a2_pp
 
-a2_pp_s <- base_pp_s + geom_area(fill="#0078b5", alpha=0.75) +
-geom_line(color="#0078b5", size = 0.25)
+a2_pp_s <- base_pp_s +
+  geom_area(fill = "#0078b5", alpha = 0.75) + geom_line(color = "#0078b5", 
+                                                        size = 0.25)
 a2_pp_s
 
-a2_ss_s <- base_ss_s + geom_area(fill="#0078b5", alpha=0.75) +
-geom_line(color="#0078b5", size = 0.25)
+a2_ss_s <- base_ss_s +
+  geom_area(fill = "#0078b5", alpha = 0.75) + geom_line(color = "#0078b5", 
+                                                        size = 0.25)
 a2_ss_s
 ```
