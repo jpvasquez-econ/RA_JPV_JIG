@@ -216,10 +216,10 @@ for (i in years) {
     distinct()
 
   # then, the buyers that trade in both years are kept
-  temp_df2 <- inner_join(temp_df2, temp_df3)
+  temp_df2 <- inner_join(temp_df2, temp_df3, by="buyer")
 
   # from the original list of buyers with their respective weights, the only buyers that are kept are the ones which trade in both years, in order to discard the ones that go out of business. With that in mind, the persistence between two years will be measured.
-  temp_df1 <- left_join(temp_df2, temp_df1)
+  temp_df1 <- left_join(temp_df2, temp_df1, by="buyer")
 
   # Another set of the sellers and buyers in the year $t-1$ and the year $t$ is created.
   temp_df4 <- sales_new %>%
@@ -281,10 +281,10 @@ for (i in years) {
     distinct()
 
   # then, the sellers that trade in both years are kept
-  temp_df2 <- inner_join(temp_df2, temp_df3)
+  temp_df2 <- inner_join(temp_df2, temp_df3, by = "seller")
 
   # the only sellers that are kept from the original list of sellers are the ones which trade in both years, in order to discard the ones that go out of business and measure the persistence between two years.
-  temp_df1 <- left_join(temp_df2, temp_df1)
+  temp_df1 <- left_join(temp_df2, temp_df1, by = "seller")
 
   # another set of the sellers and buyers in the year $t-1$ and the year $t$ is created.
   temp_df4 <- sales_new %>%
