@@ -181,7 +181,7 @@ h <- weighted.hist(
 
 This code will work for any time series.  
 
-```{r persistence_producitive}
+```{r persistence_productive}
 # all the unique years from the 'year' variable are put into a vector
 years <- unique(sales_new$year)
 # the last year is popped because the for-loop needs to stop in the year $T-1$ to calculate the difference between firms in the year $T$.
@@ -231,8 +231,7 @@ for (i in years) {
     select(buyer, seller)
 
   # only the links between firms that are present in the two consecutive years are kept
-  temp_df4 <- inner_join(temp_df4, temp_df5, by = c("buyer", "seller")) %>%
-    distinct() %>%
+  temp_df4 <- semi_join(temp_df4, temp_df5, by = c("buyer", "seller")) %>%
     count(buyer)
   # the number of sellers per buyer is computed in the last list
 
@@ -296,10 +295,9 @@ for (i in years) {
     select(buyer, seller)
 
   # only the links between firms that are present in the two consecutive years are kept
-  temp_df4 <- inner_join(temp_df4, 
+  temp_df4 <- semi_join(temp_df4, 
                          temp_df5, 
                          by = c("buyer", "seller")) %>%
-    distinct() %>%
     count(seller)
   # the number of buyers per seller is computed in the last list
 
@@ -325,8 +323,8 @@ for (i in years) {
 These histograms correspond to the task 3.2. The first two graphics show the share of productive linkages that survived by buyer between two years, indexed by year. Also, this plot was weighted and unweighted. The second graphic is unweighted and it measures the desired phenomenon by seller. Finally, there's a polynomial fit added to the plots and the degree of them can be manipulated. 
 
 ```{r scatter-plots}
-degree_poly_buyer <- 1
-degree_poly_seller <- 1
+poly_degree_buyer <- 1
+poly_degree_seller <- 1
 
 ##
 ## 1. BUYERS
@@ -341,7 +339,7 @@ persist <- ggplot(
   geom_smooth(
     method = "lm",
     se = FALSE,
-    formula = y ~ poly(x, degree_poly_buyer)
+    formula = y ~ poly(x, poly_degree_buyer)
   ) +
   scale_x_continuous(breaks = seq(2000, 2010, 1)) +
   ggtitle("Unweighted Persistence: Buyers") +
@@ -358,7 +356,7 @@ persist <- ggplot(
   geom_smooth(
     method = "lm",
     se = FALSE,
-    formula = y ~ poly(x, degree_poly_buyer)
+    formula = y ~ poly(x, poly_degree_buyer)
   ) +
   scale_x_continuous(breaks = seq(2000, 2010, 1)) +
   ggtitle("Weighted Persistence: Buyers") +
@@ -379,11 +377,187 @@ persist <- ggplot(
   geom_smooth(
     method = "lm",
     se = FALSE,
-    formula = y ~ poly(x, degree_poly_seller)
+    formula = y ~ poly(x, poly_degree_seller)
   ) +
   scale_x_continuous(breaks = seq(2000, 2010, 1)) +
   ggtitle("Unweighted Persistence: Sellers") +
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(y = "Persistence", x = "Year")
 persist
+```
+
+# Creation and survival rates of production linkages
+
+## Creation and survival rates
+
+```{r persistence_productive}
+# all the unique years from the 'year' variable are put into a vector
+years <- unique(sales_new$year)
+# the last year is popped because the for-loop needs to stop in the year $T-1$ to calculate the difference between firms in the year $T$.
+years <- years[-length(years)]
+
+# two empty dataframes are created to store the averages of the share of firms that remain from one year to the next one
+survival_rates <- read.csv(text = "survival_rate, log_buyer_sales")
+creation_rates <- read.csv(text = "creation_rate, log_buyer_sales")
+
+##
+## 1. survival rates
+##
+
+# variables will be created for every year $t-1$ and the next one $t$ for the buyers and sellers
+for (i in years) {
+  # for each year $t-1$ the set of links between firms is assigned to a dataframe with their respective weights per buyer corresponding to the buyer_sales in year $t-1$. Then, the number of sellers per buyer is calcultated.
+  temp_df1 <- sales_new %>%
+    filter(year == i) %>%
+    select(buyer, buyer_sales) %>%
+    add_count(buyer) %>%
+    distinct()
+
+  # the firms of interest are the ones that trade in year $t-1$ and year $t$, we're not interested in the firms that leave the market in year $t$. So, the list of the buyers in year $t-1$ and year $t$ are attached to their respective vectors.
+  temp_df2 <- sales_new %>%
+    filter(year == i) %>%
+    select(buyer) %>%
+    distinct()
+
+  temp_df3 <- sales_new %>%
+    filter(year == i + 1) %>%
+    select(buyer) %>%
+    distinct()
+
+  # then, the buyers that trade in both years are kept
+  temp_df2 <- inner_join(temp_df2, temp_df3, by="buyer")
+
+  # from the original list of buyers with their respective weights, the only buyers that are kept are the ones which trade in both years, in order to discard the ones that go out of business. With that in mind, the persistence between two years will be measured.
+  temp_df1 <- left_join(temp_df2, temp_df1, by="buyer")
+
+  # Another set of the sellers and buyers in the year $t-1$ and the year $t$ is created.
+  temp_df4 <- sales_new %>%
+    filter(year == i) %>%
+    select(buyer, seller)
+
+  temp_df5 <- sales_new %>%
+    filter(year == i + 1) %>%
+    select(buyer, seller)
+
+  # only the links between firms that are present in the two consecutive years are kept
+  temp_df4 <- inner_join(temp_df4, temp_df5, by = c("buyer", "seller")) %>%
+    distinct() %>%
+    count(buyer)
+  # the number of sellers per buyer is computed in the last list
+
+  # the number of sellers per buyer that remained trading with eachother in year $t$ is matched with the number of sellers per buyer in year $t-1$. The missing values are changed by 0's
+  temp_df1 <- left_join(temp_df1, temp_df4, by = "buyer")
+
+  temp_df1[is.na(temp_df1)] <- 0
+
+  # the observations are matched and then the share of firms that remained in year $t$ is divided by the number of sellers per buyer in year $t-1$.
+  temp_df1 <- temp_df1 %>%
+    transmute(survival_rate = n.y / n.x, log_buyer_sales = log(buyer_sales))
+
+  # then, it's added to the empty dataframe the first time and consecutively per year
+  survival_rates <- rbind(survival_rates, temp_df1)
+}
+
+##
+## 2. creation rates
+##
+
+# variables will be created for every year $t-1$ and the next one $t$ for the buyers and sellers
+for (i in years) {
+  # for each year $t-1$ the set of links between firms is assigned to a dataframe with their respective weights per buyer corresponding to the buyer_sales in year $t-1$. Then, the number of sellers per buyer is calcultated.
+  temp_df1 <- sales_new %>%
+    filter(year == i) %>%
+    select(buyer, buyer_sales) %>%
+    add_count(buyer) %>%
+    distinct()
+
+  # the firms of interest are the ones that trade in year $t-1$ and year $t$, we're not interested in the firms that enter the market in year $t$. So, the list of the buyers in year $t-1$ and year $t$ are attached to their respective vectors.
+  temp_df2 <- sales_new %>%
+    filter(year == i) %>%
+    select(buyer) %>%
+    distinct()
+
+  temp_df3 <- sales_new %>%
+    filter(year == i + 1) %>%
+    select(buyer) %>%
+    distinct()
+
+  # then, the buyers that trade in both years are kept
+  temp_df2 <- inner_join(temp_df2, temp_df3, by="buyer")
+
+  # from the original list of buyers with their respective weights, the only buyers that are kept are the ones which trade in both years, in order to discard the ones that go out of business. With that in mind, the persistence between two years will be measured.
+  temp_df1 <- left_join(temp_df2, temp_df1, by="buyer")
+
+  # Another set of the sellers and buyers in the year $t-1$ and the year $t$ is created.
+  temp_df4 <- sales_new %>%
+    filter(year == i) %>%
+    select(buyer, seller)
+
+  temp_df5 <- sales_new %>%
+    filter(year == i + 1) %>%
+    select(buyer, seller)
+
+  # only the links between firms that are present in year $t$ and aren't in year $t-1$ are kept
+  temp_df4 <- anti_join(temp_df5, temp_df4, by = c("buyer", "seller")) %>%
+    count(buyer)
+  # the number of sellers per buyer is computed in the last list
+
+  # the number of sellers per buyer that started trading with eachother in year $t$ is matched with the number of sellers per buyer in year $t-1$. The missing values are changed by 0's
+  temp_df1 <- left_join(temp_df1, temp_df4, by = "buyer")
+
+  temp_df1[is.na(temp_df1)] <- 0
+
+  # the observations are matched and then the share of firms that remained in year $t$ is divided by the number of sellers per buyer in year $t-1$.
+  temp_df1 <- temp_df1 %>%
+    transmute(creation_rate = n.y / n.x, log_buyer_sales = log(buyer_sales))
+
+  # then, it's added to the empty dataframe the first time and consecutively per year
+  creation_rates <- rbind(creation_rates, temp_df1)
+}
+```
+
+## Scatter plots for survival and creation rates
+
+```{r scatter-plots}
+poly_degree_survival <- 1
+poly_degree_creation <- 1
+
+##
+## 1. SURVIVAL RATE
+##
+
+rates <- ggplot(
+  data = survival_rates,
+  aes(x = log_buyer_sales, y = survival_rate)
+) +
+  geom_point(size = 0.001) +
+  geom_smooth(
+    method = "lm",
+    se = FALSE,
+    formula = y ~ poly(x, poly_degree_survival)
+  ) +
+  ggtitle("Survival rate of production linkages") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(y = "Persistence rate", x = "Log of buyer sales")
+rates
+
+
+##
+## 2. CREATION RATE
+##
+
+rates <- ggplot(
+  data = creation_rates,
+  aes(x = log_buyer_sales, y = creation_rate)
+) +
+  geom_point(size = 0.001) +
+  geom_smooth(
+    method = "lm",
+    se = FALSE,
+    formula = y ~ poly(x, poly_degree_creation)
+  ) +
+  ggtitle("Creation rate of production linkages") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(y = "Creation rate", x = "Log of buyer sales")
+rates
 ```
