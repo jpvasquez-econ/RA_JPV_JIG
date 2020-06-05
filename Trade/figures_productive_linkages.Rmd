@@ -464,12 +464,17 @@ for (i in years) {
 
 # variables will be created for every year $t-1$ and the next one $t$ for the buyers and sellers
 for (i in years) {
-  # for each year $t-1$ the set of links between firms is assigned to a dataframe with their respective weights per buyer corresponding to the buyer_sales in year $t-1$. Then, the number of sellers per buyer is calcultated.
+  # for each year $t$ the set of buyers is assigned to a dataframe and the number of sellers per buyer is calcultated.
   temp_df1 <- sales_new %>%
+    filter(year == i + 1) %>%
+    select(buyer) %>%
+    count(buyer)
+  
+  # in order to compare the creation and survival rates, we need to use weights from the same year, in this case, $t-1$. So we save and to attach them at the end. 
+  temp_df7 <- sales_new %>%
     filter(year == i) %>%
     select(buyer, buyer_sales) %>%
-    add_count(buyer) %>%
-    distinct()
+    distinct(.keep_all = TRUE)
 
   # the firms of interest are the ones that trade in year $t-1$ and year $t$, we're not interested in the firms that enter the market in year $t$. So, the list of the buyers in year $t-1$ and year $t$ are attached to their respective vectors.
   temp_df2 <- sales_new %>%
@@ -504,6 +509,8 @@ for (i in years) {
 
   # the number of sellers per buyer that started trading with eachother in year $t$ is matched with the number of sellers per buyer in year $t-1$. The missing values are changed by 0's
   temp_df1 <- left_join(temp_df1, temp_df4, by = "buyer")
+  
+  temp_df1 <- left_join(temp_df1, temp_df7, by = "buyer")
 
   temp_df1[is.na(temp_df1)] <- 0
 
@@ -560,4 +567,11 @@ rates <- ggplot(
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(y = "Creation rate", x = "Log of buyer sales")
 rates
+```
+
+# Survival function
+
+## Approximating the survival function1: 1 year without trading doesn't break the linkage
+```{r survival-function-1-year}
+
 ```
