@@ -571,7 +571,52 @@ rates
 
 # Survival function
 
-## Approximating the survival function1: 1 year without trading doesn't break the linkage
-```{r survival-function-1-year}
+## Approximating the survival function
+```{r survival-function}
+# write hashes in front of this code when working with the real data, this is just a fix for the fake dataset
 
+survival_function <- sales_new %>% 
+  group_by(buyer, seller, year) %>% 
+  distinct(buyer, seller, year, .keep_all = TRUE)
+
+diff_tolerance <- 1 # this parameter indicates how long can two firms stay without trading and don't break their link
+
+survival_function <- survival_function %>% 
+  select(year, buyer, seller) %>% # selecting the variables of interest
+  group_by(buyer, seller) %>% # separating the links between firms
+  arrange(year) %>% # sorting ascendently by year
+  mutate(diff = year - lag(year)) %>% # calculating the first order difference between the year variable
+  mutate(diff = if_else(diff > diff_tolerance + 1, 0, diff)) # if the difference is larger than the tolerance plus one, we create a new link
+
+survival_function[is.na(survival_function)] <- 0 # the NA values correspond to the starting year of the first link between two firms, so it's set as 0 to indicate it's a starting year for the corresponding link
+
+survival_function <- survival_function %>% 
+  group_by(buyer, seller) %>% # separating the links between firms
+  mutate(link_number = cumsum(c(-1, diff(diff)) < 0)) %>% # if there's interrupted trading between two firms, the new links created, respecting the tolerance, are separated
+  ungroup() %>% 
+  group_by(buyer, seller, link_number) %>% # regroup taking into account the new separation of the links between firms
+  arrange(year) %>% # sorting ascendently again by year
+  mutate(yr = seq(n()) - 1) %>% # assigning the year from 0 to 4 according to the length of the firms relationship
+  filter(!any(yr == 0 & year > 2005) & yr <= 4) %>% # censoring the data: if the observation is greater or equal than year 4 it's not taken into account; the starting links after 2005 are not consider in this exercise
+  ungroup() %>% 
+  select(yr) %>% 
+  count(yr) # counting the links that remain each year
+
+yr_0_total_links <- survival_function$n[1] # saving the base for the survival rate
+
+survival_function <- survival_function %>% 
+  transmute(year = yr, survival_rate = n / yr_0_total_links) # resulting df with year from 0 to 4 and their respecting share
+```
+
+## Plotting the survival function
+```{r plotting-survival-function}
+surv_func <- ggplot(
+  data = survival_function,
+  aes(x = year, y = survival_rate)
+) +
+  geom_bar(stat = "identity") +
+  ggtitle("Survival function of the links between firms \n Survival rate after year t") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(y = "Survival rate", x = "Year")
+surv_func
 ```
