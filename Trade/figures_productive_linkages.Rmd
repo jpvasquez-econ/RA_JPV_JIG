@@ -128,10 +128,10 @@ These histograms correspond to the task 3.1. The first two graphics show the fre
 
 ## unweighted
 # this is another way
-h <- hist(sellers_per_buyer$n_sellers, 
-          main = "Unweighted number of sellers", 
-          freq = FALSE
-          )
+h <- hist(sellers_per_buyer$n_sellers,
+  main = "Unweighted number of sellers",
+  freq = FALSE
+)
 
 ## weighted
 h <- weighted.hist(sellers_per_buyer$n_sellers,
@@ -156,7 +156,7 @@ graph1
 h <- hist(sectors_per_buyer$n_seller_sectors,
   main = "Unweighted number of sellers",
   breaks = seq(
-    0, max(sectors_per_buyer$n_seller_sectors) + 1, 
+    0, max(sectors_per_buyer$n_seller_sectors) + 1,
     max(sectors_per_buyer$n_seller_sectors) / 10
   ),
   freq = FALSE
@@ -169,7 +169,7 @@ h <- weighted.hist(
   freq = FALSE,
   main = "Weighted number of sellers",
   breaks = seq(
-    0, max(sectors_per_buyer$n_seller_sectors) + 1, 
+    0, max(sectors_per_buyer$n_seller_sectors) + 1,
     max(sectors_per_buyer$n_seller_sectors) / 10
   )
 )
@@ -216,10 +216,10 @@ for (i in years) {
     distinct()
 
   # then, the buyers that trade in both years are kept
-  temp_df2 <- inner_join(temp_df2, temp_df3, by="buyer")
+  temp_df2 <- inner_join(temp_df2, temp_df3, by = "buyer")
 
   # from the original list of buyers with their respective weights, the only buyers that are kept are the ones which trade in both years, in order to discard the ones that go out of business. With that in mind, the persistence between two years will be measured.
-  temp_df1 <- left_join(temp_df2, temp_df1, by="buyer")
+  temp_df1 <- left_join(temp_df2, temp_df1, by = "buyer")
 
   # Another set of the sellers and buyers in the year $t-1$ and the year $t$ is created.
   temp_df4 <- sales_new %>%
@@ -295,9 +295,10 @@ for (i in years) {
     select(buyer, seller)
 
   # only the links between firms that are present in the two consecutive years are kept
-  temp_df4 <- semi_join(temp_df4, 
-                         temp_df5, 
-                         by = c("buyer", "seller")) %>%
+  temp_df4 <- semi_join(temp_df4,
+    temp_df5,
+    by = c("buyer", "seller")
+  ) %>%
     count(seller)
   # the number of buyers per seller is computed in the last list
 
@@ -425,10 +426,10 @@ for (i in years) {
     distinct()
 
   # then, the buyers that trade in both years are kept
-  temp_df2 <- inner_join(temp_df2, temp_df3, by="buyer")
+  temp_df2 <- inner_join(temp_df2, temp_df3, by = "buyer")
 
   # from the original list of buyers with their respective weights, the only buyers that are kept are the ones which trade in both years, in order to discard the ones that go out of business. With that in mind, the persistence between two years will be measured.
-  temp_df1 <- left_join(temp_df2, temp_df1, by="buyer")
+  temp_df1 <- left_join(temp_df2, temp_df1, by = "buyer")
 
   # Another set of the sellers and buyers in the year $t-1$ and the year $t$ is created.
   temp_df4 <- sales_new %>%
@@ -469,8 +470,8 @@ for (i in years) {
     filter(year == i + 1) %>%
     select(buyer) %>%
     count(buyer)
-  
-  # in order to compare the creation and survival rates, we need to use weights from the same year, in this case, $t-1$. So we save and to attach them at the end. 
+
+  # in order to compare the creation and survival rates, we need to use weights from the same year, in this case, $t-1$. So we save and to attach them at the end.
   temp_df7 <- sales_new %>%
     filter(year == i) %>%
     select(buyer, buyer_sales) %>%
@@ -488,10 +489,10 @@ for (i in years) {
     distinct()
 
   # then, the buyers that trade in both years are kept
-  temp_df2 <- inner_join(temp_df2, temp_df3, by="buyer")
+  temp_df2 <- inner_join(temp_df2, temp_df3, by = "buyer")
 
   # from the original list of buyers with their respective weights, the only buyers that are kept are the ones which trade in both years, in order to discard the ones that go out of business. With that in mind, the persistence between two years will be measured.
-  temp_df1 <- left_join(temp_df2, temp_df1, by="buyer")
+  temp_df1 <- left_join(temp_df2, temp_df1, by = "buyer")
 
   # Another set of the sellers and buyers in the year $t-1$ and the year $t$ is created.
   temp_df4 <- sales_new %>%
@@ -509,7 +510,7 @@ for (i in years) {
 
   # the number of sellers per buyer that started trading with eachother in year $t$ is matched with the number of sellers per buyer in year $t-1$. The missing values are changed by 0's
   temp_df1 <- left_join(temp_df1, temp_df4, by = "buyer")
-  
+
   temp_df1 <- left_join(temp_df1, temp_df7, by = "buyer")
 
   temp_df1[is.na(temp_df1)] <- 0
@@ -575,13 +576,13 @@ rates
 ```{r survival-function}
 # write hashes in front of this code when working with the real data, this is just a fix for the fake dataset
 
-survival_function <- sales_new %>% 
-  group_by(buyer, seller, year) %>% 
+survival_function <- sales_new %>%
+  group_by(buyer, seller, year) %>%
   distinct(buyer, seller, year, .keep_all = TRUE)
 
 diff_tolerance <- 1 # this parameter indicates how long can two firms stay without trading and don't break their link
 
-survival_function <- survival_function %>% 
+survival_function <- survival_function %>%
   select(year, buyer, seller) %>% # selecting the variables of interest
   group_by(buyer, seller) %>% # separating the links between firms
   arrange(year) %>% # sorting ascendently by year
@@ -590,21 +591,21 @@ survival_function <- survival_function %>%
 
 survival_function[is.na(survival_function)] <- 0 # the NA values correspond to the starting year of the first link between two firms, so it's set as 0 to indicate it's a starting year for the corresponding link
 
-survival_function <- survival_function %>% 
+survival_function <- survival_function %>%
   group_by(buyer, seller) %>% # separating the links between firms
-  mutate(link_number = cumsum(c(-1, diff(diff)) < 0)) %>% # if there's interrupted trading between two firms, the new links created, respecting the tolerance, are separated
-  ungroup() %>% 
+  mutate(link_number = cumsum(c(-1, diff(diff)) < 0)) %>% # if there's intermittent trading between two firms,the new links created, respecting the tolerance, are separated
+  ungroup() %>%
   group_by(buyer, seller, link_number) %>% # regroup taking into account the new separation of the links between firms
   arrange(year) %>% # sorting ascendently again by year
   mutate(yr = seq(n()) - 1) %>% # assigning the year from 0 to 4 according to the length of the firms relationship
-  filter(!any(yr == 0 & year > 2005) & yr <= 4) %>% # censoring the data: if the observation is greater or equal than year 4 it's not taken into account; the starting links after 2005 are not consider in this exercise
-  ungroup() %>% 
-  select(yr) %>% 
+  filter(!any(yr == 0 & year > 2005) & yr <= 4) %>% # censoring the data: if the observation is greater or equal than year 4 it's not taken into account; the starting links after 2005 are not considered in this exercise
+  ungroup() %>%
+  select(yr) %>%
   count(yr) # counting the links that remain each year
 
 yr_0_total_links <- survival_function$n[1] # saving the base for the survival rate
 
-survival_function <- survival_function %>% 
+survival_function <- survival_function %>%
   transmute(year = yr, survival_rate = n / yr_0_total_links) # resulting df with year from 0 to 4 and their respecting share
 ```
 
@@ -619,4 +620,118 @@ surv_func <- ggplot(
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(y = "Survival rate", x = "Year")
 surv_func
+```
+
+## Weighted survival function: three possible options of weighting
+
+```{r weighted-survival-function}
+# write hashes in front of this code when working with the real data, this is just a fix for the fake dataset
+
+weighted_survival_function <- sales_new %>%
+  group_by(buyer, seller, year) %>%
+  distinct(buyer, seller, year, .keep_all = TRUE)
+
+diff_tolerance <- 1 # this parameter indicates how long can two firms stay without trading and don't break their link
+
+weighted_survival_function <- weighted_survival_function %>%
+  select(year, buyer, seller, buyer_sales) %>% # selecting the variables of interest
+  group_by(buyer, seller) %>% # separating the links between firms
+  arrange(year) %>% # sorting ascendently by year
+  mutate(diff = year - lag(year)) %>% # calculating the first order difference between the year variable
+  mutate(diff = if_else(diff > diff_tolerance + 1, 0, diff)) # if the difference is larger than the tolerance plus one, we create a new link
+
+weighted_survival_function[is.na(weighted_survival_function)] <- 0 # the NA values correspond to the starting year of the first link between two firms, so it's set as 0 to indicate it's a starting year for the corresponding link
+
+weighted_survival_function <- weighted_survival_function %>%
+  group_by(buyer, seller) %>% # separating the links between firms
+  mutate(link_number = cumsum(c(-1, diff(diff)) < 0)) %>% # if there's intermittent trading between two firms,the new links created, respecting the tolerance, are separated
+  ungroup() %>%
+  group_by(buyer, seller, link_number) %>% # regroup taking into account the new separation of the links between firms
+  arrange(year) %>% # sorting ascendently again by year
+  mutate(yr = seq(n()) - 1) %>% # assigning the year from 0 to 4 according to the length of the firms relationship
+  filter(!any(yr == 0 & year > 2005) & yr <= 4) %>% # censoring the data: if the observation is greater or equal than year 4 it's not taken into account; the starting links after 2005 are not considered in this exercise
+  ungroup()
+
+# put hashes in front of the options that aren't picked
+
+# Option 1: leave the weights as they are
+
+weighted_survival_function <- weighted_survival_function %>%
+  select(-year, -diff)
+
+# Option 2: apply the buyer_sales variable from year 0 to the other ones
+
+# first, the buyer_sales variable from year 0 is written in a dataframe with their respective buyer, seller and link_number
+
+temp_df1 <- weighted_survival_function %>%
+  select(-year, -diff) %>%
+  filter(yr == 0) %>%
+  select(yr, buyer, seller, link_number, buyer_sales) %>%
+  distinct(.keep_all = TRUE)
+
+# these weights are matched with their respective links for years $t$, with t in 1, 2, 3, 4
+
+temp_df2 <- weighted_survival_function %>%
+  filter(yr != 0) %>%
+  select(-year, -diff) %>%
+  left_join(temp_df1, by = c("buyer", "seller", "link_number")) %>% # for each link the respective weight is assigned
+  transmute(yr = yr.x, buyer, seller, link_number, buyer_sales = buyer_sales.y) # given we have both values for buyer_sales and yr at the same time, the desired ones are kept
+
+weighted_survival_function <- rbind(temp_df1, temp_df2) # appending the year 0 with the rest
+
+# Option 3: apply the buyer_sales variable from year $t-1$ to year $t$ for $t$ >= 1
+
+temp_df1 <- weighted_survival_function %>%
+  filter(yr == 0) %>%
+  select(-year, -diff) # selecting the variables of interest
+
+for (i in 1:4) {
+  # a dataframe with the weights of year $t - 1$ is created
+  temp_df2 <- weighted_survival_function %>%
+    filter(yr == i - 1) %>%
+    select(buyer, seller, link_number, buyer_sales) %>%
+    distinct(.keep_all = TRUE)
+
+  # these weights are matched to year $t$
+  temp_df3 <- weighted_survival_function %>%
+    filter(yr == i) %>%
+    select(-year, -diff) %>%
+    left_join(temp_df2, by = c("buyer", "seller", "link_number")) %>%
+    transmute(yr, buyer, seller, link_number, buyer_sales = buyer_sales.y) # given we have both values for buyer_sales at the same time, the desired ones are kept
+
+  temp_df1 <- rbind(temp_df1, temp_df3) # the links with their correct weights are appended to the dataframe
+}
+
+weighted_survival_function <- temp_df1
+
+#
+# Summarizing and creating the weighted survival function
+#
+```
+
+## Plotting the weighted survival function
+```{r plotting-weighted-survival-function}
+# The next graph needs a summarized dataframe with the year with their respective survival rates, if that's not the case feel free to modify it
+
+surv_func <- ggplot(
+  data = survival_function,
+  aes(x = year, y = survival_rate)
+) +
+  geom_bar(stat = "identity") +
+  ggtitle("Survival function of the links between firms weighted by buyer sales \n Survival rate after year t") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(y = "Survival rate", x = "Year")
+surv_func
+```
+
+## Checking if the survival rate from task 3.4 if $t = 1$ is the same as the persistance rate from one year to another in task 3.3
+
+```{r checking-equality-of-rates}
+# persistence rate from task 3.3
+
+mean(survival_rates$survival_rate)
+
+# survival function S(x) with $t = 1$ S(1)
+
+survival_function$survival_rate[2]
 ```
