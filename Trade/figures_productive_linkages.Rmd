@@ -652,13 +652,15 @@ weighted_survival_function <- weighted_survival_function %>%
   filter(!any(yr == 0 & year > 2005) & yr <= 4) %>% # censoring the data: if the observation is greater or equal than year 4 it's not taken into account; the starting links after 2005 are not considered in this exercise
   ungroup()
 
-# put hashes in front of the options that aren't picked
+# choose the desired option from 1 to 3
 
+option <- 2
+if (option == 1){
 # Option 1: leave the weights as they are
 
 weighted_survival_function <- weighted_survival_function %>%
   select(-year, -diff)
-
+} else if (option == 2) {
 # Option 2: apply the buyer_sales variable from year 0 to the other ones
 
 # first, the buyer_sales variable from year 0 is written in a dataframe with their respective buyer, seller and link_number
@@ -679,6 +681,7 @@ temp_df2 <- weighted_survival_function %>%
 
 weighted_survival_function <- rbind(temp_df1, temp_df2) # appending the year 0 with the rest
 
+} else {
 # Option 3: apply the buyer_sales variable from year $t-1$ to year $t$ for $t$ >= 1
 
 temp_df1 <- weighted_survival_function %>%
@@ -704,6 +707,7 @@ for (i in 1:4) {
 
 weighted_survival_function <- temp_df1
 
+}
 #
 # Summarizing and creating the weighted survival function
 #
