@@ -35,7 +35,7 @@ Finally, these algorithms will control by different criteria of **G**eographical
 
 So, the steps associated with this task will follow this nomenclature according to the General Information presented above: 
 
-$$\begin{matrix} A & V & G \\ 1 & 1 & 1 \\ 2 & 2 & 2 \\ & & 3 \\ & & 4 \end{matrix}$$
+$\begin{matrix} A & V & G \\ 1 & 1 & 1 \\ 2 & 2 & 2 \\ & & 3 \\ & & 4 \end{matrix}$
 
 So, the files presented below are $\forall a \in A \; \forall v \in V \; \forall g \in G$, the files which execute the corresponding name similarity algorithms:
 
