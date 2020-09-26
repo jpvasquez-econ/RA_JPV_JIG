@@ -35,7 +35,7 @@ Finally, these algorithms will control by different criteria of **G**eographical
 
 So, the steps associated with this task will follow this nomenclature according to the General Information presented above: 
 
-$\begin{matrix} A & V & G \\ 1 & 1 & 1 \\ 2 & 2 & 2 \\ & & 3 \\ & & 4 \end{matrix}$
+<img src="http://latex.codecogs.com/svg.latex?\begin{matrix}&space;A&space;&&space;V&space;&&space;G&space;\\&space;1&space;&&space;1&space;&&space;1&space;\\&space;2&space;&&space;2&space;&&space;2&space;\\&space;&&space;&&space;3&space;\\&space;&&space;&&space;4&space;\end{matrix}" title="http://latex.codecogs.com/svg.latex?\begin{matrix} A & V & G \\ 1 & 1 & 1 \\ 2 & 2 & 2 \\ & & 3 \\ & & 4 \end{matrix}" />
 
 So, the files presented below are $\forall a \in A \; \forall v \in V \; \forall g \in G$, the files which execute the corresponding name similarity algorithms:
 
