@@ -48,13 +48,13 @@ So, the files presented below are <img src="http://latex.codecogs.com/svg.latex?
 7. File **2-1-2-3-tf_idf_orbis_entity_municipality_denue_alternative.ipynb**. 
 8. File **2-1-2-4-td_idf_orbis_no_geo_denue_alternative.ipynb**. 
 9. File **2-2-1-1-rapidfuzz_both_entity_municipality.ipynb**. 
-10. File **2-2-1-2-rapidfuzz_orbis_entity_municipality_denue_entity_big_companies.ipynb**. 
-11. File **2-2-1-3-rapidfuzz_orbis_entity_municipality_denue.ipynb**. 
-12. File **2-2-1-4-rapidfuzz_orbis_no_geo_denue.ipynb**. 
+10. File **2-2-1-2-rapidfuzz_orbis_entity_municipality_denue_entity_big_companies.ipynb**. *Not working, problems with RAM*
+11. File **2-2-1-3-rapidfuzz_orbis_entity_municipality_denue.ipynb**. *Not working, problems with RAM*
+12. File **2-2-1-4-rapidfuzz_orbis_no_geo_denue.ipynb**. *Not working, problems with RAM*
 13. File **2-2-2-1-rapidfuzz_both_entity_municipality_alternative.ipynb**. 
-14. File **2-2-2-2-rapidfuzz_orbis_entity_municipality_denue_entity_big_companies_alternative.ipynb**. 
-15. File **2-2-2-3-rapidfuzz_orbis_entity_municipality_denue_alternative.ipynb**
-16. File **2-2-2-4-rapidfuzz_orbis_no_geo_denue_alternative.ipynb**. 
+14. File **2-2-2-2-rapidfuzz_orbis_entity_municipality_denue_entity_big_companies_alternative.ipynb**. *Not working, problems with RAM*
+15. File **2-2-2-3-rapidfuzz_orbis_entity_municipality_denue_alternative.ipynb.** *Not working, problems with RAM*
+16. File **2-2-2-4-rapidfuzz_orbis_no_geo_denue_alternative.ipynb**. *Not working, problems with RAM*
 
 After all this files are executed, the results are a set of files with their corresponding matches by algorithm, version and respective controls. 
 
